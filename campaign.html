@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campaign Details - KYC P2P Platform</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="background-shapes">
+        <div class="shape"></div>
+        <div class="shape"></div>
+    </div>
+    <div class="container">
+        <header class="dashboard-header">
+            <div class="header-left">
+                <i class='bx bx-detail bx-tada' style='color: var(--terminal-green); font-size: 32px;'></i>
+                <h1>Campaign Details</h1>
+            </div>
+            <button onclick="window.location.href='/dashboard.html'" class="back-btn">
+                <i class='bx bx-arrow-back'></i>
+                <span>Back to Dashboard</span>
+            </button>
+        </header>
+
+        <div id="campaignDetails" class="mt-2">
+            <!-- Campaign details will be loaded here -->
+        </div>
+
+        <div id="verificationSection" class="mt-2 verification-section" style="display: none;">
+            <div class="section-header">
+                <i class='bx bx-upload'></i>
+                <h2>Submit Verification</h2>
+            </div>
+            <form id="verificationForm" onsubmit="return handleSubmitVerification(event)">
+                <div class="file-upload-container">
+                    <div class="file-upload-area" onclick="document.getElementById('paymentProof').click()">
+                        <i class='bx bx-image-add'></i>
+                        <p>Click to upload payment proof</p>
+                        <span class="file-name"></span>
+                    </div>
+                    <input type="file" id="paymentProof" accept="image/*" required style="display: none;">
+                </div>
+                <button type="submit">
+                    <span>Submit Verification</span>
+                    <i class='bx bx-check'></i>
+                </button>
+            </form>
+        </div>
+
+        <div id="chatSection" class="mt-2 chat-section" style="display: none;">
+            <div class="section-header">
+                <i class='bx bx-message-square-detail'></i>
+                <h2>Chat</h2>
+            </div>
+            <div class="chat-container">
+                <div id="chatMessages" class="chat-messages">
+                    <!-- Messages will be loaded here -->
+                </div>
+                <div class="chat-input">
+                    <div class="input-group">
+                        <i class='bx bx-message'></i>
+                        <input type="text" id="messageInput" placeholder="Type your message...">
+                    </div>
+                    <button onclick="sendMessage()">
+                        <i class='bx bx-send'></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="approvalSection" class="mt-2 approval-section" style="display: none;">
+            <div class="section-header">
+                <i class='bx bx-check-shield'></i>
+                <h2>Approval</h2>
+            </div>
+            <button onclick="handleApproveVerification()" class="approve-btn">
+                <span>Approve Verification</span>
+                <i class='bx bx-check-double'></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+    
+    <script src="js/config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/campaign.js"></script>
+</body>
+</html>
