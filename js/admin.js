@@ -1,10 +1,36 @@
 // Check if user is admin
 async function checkAdmin() {
     try {
-        const userDoc = await db.collection('users').doc(currentUser.uid).get();
-        if (!userDoc.exists || userDoc.data().role !== 'admin') {
-            window.location.href = '/dashboard.html';
+        // Esperar a que la autenticación se complete
+        await new Promise((resolve) => {
+            const unsubscribe = auth.onAuthStateChanged((user) => {
+                unsubscribe();
+                resolve(user);
+            });
+        });
+
+        if (!auth.currentUser) {
+            console.error('No user logged in');
+            window.location.href = '/index.html';
+            return;
         }
+
+        const userDoc = await db.collection('users').doc(auth.currentUser.uid).get();
+        console.log('User doc:', userDoc.data()); // Para debug
+
+        if (!userDoc.exists) {
+            console.error('User document does not exist');
+            window.location.href = '/dashboard.html';
+            return;
+        }
+
+        if (userDoc.data().role !== 'admin') {
+            console.error('User is not admin');
+            window.location.href = '/dashboard.html';
+            return;
+        }
+
+        console.log('Admin check passed');
     } catch (error) {
         console.error('Error checking admin status:', error);
         window.location.href = '/dashboard.html';
