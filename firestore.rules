@@ -31,7 +31,7 @@ service cloud.firestore {
                        request.resource.data.verificationCount != resource.data.verificationCount ||
                        (isAdmin() && 
                         request.resource.data.diff(resource.data).affectedKeys()
-                        .hasOnly(['status', 'approvedAt', 'approvedBy'])));
+                        .hasOnly(['status', 'approvedAt', 'approvedBy', 'paymentStatus', 'paymentApprovedAt', 'paymentApprovedBy', 'paymentRejectedAt', 'paymentRejectedBy', 'paymentRejectionReason'])));
       allow delete: if isOwner(resource.data.createdBy);
     }
 
@@ -42,7 +42,10 @@ service cloud.firestore {
                       request.resource.data.userId == request.auth.uid;
       allow update: if isAuthenticated() && 
                       (resource.data.userId == request.auth.uid || 
-                       get(/databases/$(database)/documents/campaigns/$(request.resource.data.campaignId)).data.createdBy == request.auth.uid);
+                       get(/databases/$(database)/documents/campaigns/$(request.resource.data.campaignId)).data.createdBy == request.auth.uid ||
+                       (isAdmin() && 
+                        request.resource.data.diff(resource.data).affectedKeys()
+                        .hasOnly(['status', 'approvedAt', 'approvedBy'])));
       allow delete: if isOwner(resource.data.userId);
     }
 

@@ -428,16 +428,22 @@ async function approveCampaign(campaignId, showAlert = true) {
             throw new Error('User does not have admin privileges');
         }
 
-        // Verificar que el pago esté aprobado
+        // Obtener la campaña
         const campaign = await db.collection('campaigns').doc(campaignId).get();
         if (!campaign.exists) {
             throw new Error('Campaign not found');
         }
 
+        // Primero aprobar el pago si no está aprobado
         if (campaign.data().paymentStatus !== 'approved') {
-            throw new Error('Cannot approve campaign: payment not approved yet');
+            await db.collection('campaigns').doc(campaignId).update({
+                paymentStatus: 'approved',
+                paymentApprovedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                paymentApprovedBy: currentUser.uid
+            });
         }
 
+        // Luego aprobar la campaña
         await db.collection('campaigns').doc(campaignId).update({
             status: 'approved',
             approvedAt: firebase.firestore.FieldValue.serverTimestamp(),
