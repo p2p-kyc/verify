@@ -18,7 +18,7 @@
                 <i class='bx bx-detail bx-tada' style='color: var(--terminal-green); font-size: 32px;'></i>
                 <h1>Campaign Details</h1>
             </div>
-            <button onclick="window.location.href='/dashboard.html'" class="back-btn">
+            <button onclick="window.location.href='dashboard.html'" class="back-btn">
                 <i class='bx bx-arrow-back'></i>
                 <span>Back to Dashboard</span>
             </button>
@@ -88,8 +88,9 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
     
-    <script src="js/config.js"></script>
-    <script src="js/auth.js"></script>
-    <script src="js/campaign.js"></script>
+    <script src="js/config.js" defer></script>
+    <script src="js/auth.js" defer></script>
+    <script src="js/auth-observer.js" defer></script>
+    <script src="js/campaign.js" defer></script>
 </body>
 </html>

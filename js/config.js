@@ -10,29 +10,57 @@ const firebaseConfig = {
     measurementId: "G-PX3PQZVDRS"
 };
 
+// Configure Firestore settings before initialization
+if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+    firebase.firestore.setLogLevel('debug');
+}
+
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 
 // Initialize services
 const auth = firebase.auth();
-const db = firebase.firestore();
 const storage = firebase.storage();
 
-// Global state
-let currentUser = null;
+// Initialize Firestore with settings
+const db = firebase.firestore();
+db.settings({
+    cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED
+});
+
+// Enable persistence after initialization
+db.enablePersistence({
+    synchronizeTabs: true
+}).catch((err) => {
+    if (err.code == 'failed-precondition') {
+        console.log('Multiple tabs open, persistence can only be enabled in one tab at a time.');
+    } else if (err.code == 'unimplemented') {
+        console.log('The current browser does not support persistence.');
+    }
+});
+
+// Export services
+window.auth = auth;
+window.db = db;
+window.storage = storage;
+window.currentUser = null;
 
 // Auth state observer
 auth.onAuthStateChanged((user) => {
-    currentUser = user;
+    window.currentUser = user;
+    
+    // Get current page
+    const currentPath = window.location.pathname.split('/').pop() || 'index.html';
+    
     if (user) {
         // User is signed in
-        if (window.location.pathname === '/index.html' || window.location.pathname === '/') {
-            window.location.href = '/dashboard.html';
+        if (currentPath === 'index.html') {
+            window.location.href = 'dashboard.html';
         }
     } else {
         // User is signed out
-        if (window.location.pathname !== '/index.html' && window.location.pathname !== '/') {
-            window.location.href = '/index.html';
+        if (currentPath !== 'index.html') {
+            window.location.href = 'index.html';
         }
     }
 });

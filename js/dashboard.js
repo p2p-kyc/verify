@@ -63,9 +63,46 @@ function calculateTotal() {
     document.getElementById('totalPrice').value = totalPrice.toFixed(2);
 }
 
-// Add event listeners for calculation
-document.getElementById('accountCount').addEventListener('input', calculateTotal);
-document.getElementById('pricePerAccount').addEventListener('input', calculateTotal);
+// Initialize event listeners
+function initializeEventListeners() {
+    try {
+        // Add event listeners for calculation
+        const accountCountInput = document.getElementById('accountCount');
+        const pricePerAccountInput = document.getElementById('pricePerAccount');
+        if (accountCountInput && pricePerAccountInput) {
+            accountCountInput.addEventListener('input', calculateTotal);
+            pricePerAccountInput.addEventListener('input', calculateTotal);
+        }
+
+        // Add event listener for create campaign button
+        const createBtn = document.getElementById('createCampaignBtn');
+        if (createBtn) {
+            createBtn.addEventListener('click', openCreateCampaignModal);
+        }
+
+        // Add event listener for close modal button
+        const closeBtn = document.querySelector('.close-btn');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', closeCreateCampaignModal);
+        }
+
+        // Add event listener for create campaign form
+        const form = document.getElementById('createCampaignForm');
+        if (form) {
+            form.addEventListener('submit', handleCreateCampaign);
+        }
+
+        // Add event listener for logout button
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', handleLogout);
+        }
+
+        console.log('Event listeners initialized successfully');
+    } catch (error) {
+        console.error('Error initializing event listeners:', error);
+    }
+}
 
 // Load campaigns
 async function loadCampaigns() {
@@ -170,13 +207,41 @@ function createCampaignCard(id, campaign) {
 
 // View campaign details
 function viewCampaign(id) {
-    window.location.href = `/campaign.html?id=${id}`;
+    window.location.href = `campaign.html?id=${id}`;
 }
 
 // Join campaign
 function joinCampaign(id) {
-    window.location.href = `/campaign.html?id=${id}&action=join`;
+    window.location.href = `campaign.html?id=${id}&action=join`;
 }
 
-// Load campaigns when page loads
-document.addEventListener('DOMContentLoaded', loadCampaigns);
+// Wait for auth to be ready
+function waitForAuth() {
+    return new Promise((resolve) => {
+        if (window.currentUser) {
+            resolve(window.currentUser);
+        } else {
+            auth.onAuthStateChanged((user) => {
+                if (user) {
+                    resolve(user);
+                }
+            });
+        }
+    });
+}
+
+// Initialize the dashboard
+async function initializeDashboard() {
+    try {
+        // Wait for authentication
+        await waitForAuth();
+        
+        initializeEventListeners();
+        await loadCampaigns();
+    } catch (error) {
+        console.error('Error initializing dashboard:', error);
+    }
+}
+
+// Wait for DOM to be fully loaded
+document.addEventListener('DOMContentLoaded', initializeDashboard);
