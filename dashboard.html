@@ -83,9 +83,20 @@
                         <input type="number" id="pricePerAccount" min="0" step="0.01" required>
                     </div>
                     
-                    <div class="input-group">
+                    <div class="form-group">
                         <label for="totalPrice">Total Price (USDT)</label>
                         <input type="number" id="totalPrice" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label>Payment Proof (Screenshot)</label>
+                        <input type="file" id="paymentProof" accept="image/*" class="hidden-input">
+                        <div id="paymentProofPreview" class="preview-area"></div>
+                        <button type="button" id="uploadButton" class="action-button">
+                            <i class='bx bx-image-add'></i>
+                            Select Payment Proof
+                        </button>
+                        <small class="form-help">Upload a screenshot of your Binance payment (max 2MB)</small>
+                        <input type="hidden" id="paymentProofBase64">
                     </div>
                     
                     <div class="modal-footer">
@@ -111,15 +122,14 @@
         </section>
 
         <!-- Scripts -->
-        <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-        <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-        <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-        <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+        <script src="https://upload-widget.cloudinary.com/global/all.js"></script>
         
-        <script src="js/config.js" defer></script>
-        <script src="js/auth.js" defer></script>
-        <script src="js/auth-observer.js" defer></script>
-        <script src="js/dashboard.js" defer></script>
+        <script src="js/config.js"></script>
+        <script src="js/auth.js"></script>
+        <script src="js/dashboard.js"></script>
     </div>
 </body>
 </html>

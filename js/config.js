@@ -1,10 +1,9 @@
-// Firebase configuration
+// Your web app's Firebase configuration
 const firebaseConfig = {
     apiKey: "AIzaSyBSvOtPS-YnE_rmBgVGISTrC3qg5PXh3X4",
     authDomain: "kyc-p2p.firebaseapp.com",
-    databaseURL: "https://kyc-p2p-default-rtdb.firebaseio.com",
     projectId: "kyc-p2p",
-    storageBucket: "kyc-p2p.firebasestorage.app",
+    storageBucket: "kyc-p2p.appspot.com",
     messagingSenderId: "23065739958",
     appId: "1:23065739958:web:a3fda008f7cdb7ee581c17",
     measurementId: "G-PX3PQZVDRS"
@@ -20,29 +19,36 @@ firebase.initializeApp(firebaseConfig);
 
 // Initialize services
 const auth = firebase.auth();
-const storage = firebase.storage();
 
 // Initialize Firestore with settings
 const db = firebase.firestore();
 db.settings({
-    cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED
+    cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED,
+    experimentalForceLongPolling: true,
+    useFetchStreams: false
 });
 
 // Enable persistence after initialization
 db.enablePersistence({
     synchronizeTabs: true
 }).catch((err) => {
-    if (err.code == 'failed-precondition') {
-        console.log('Multiple tabs open, persistence can only be enabled in one tab at a time.');
-    } else if (err.code == 'unimplemented') {
-        console.log('The current browser does not support persistence.');
+    if (err.code === 'failed-precondition') {
+        console.warn('Multiple tabs open, persistence can only be enabled in one tab at a time.');
+    } else if (err.code === 'unimplemented') {
+        console.warn('The current browser does not support persistence.');
     }
 });
+
+// Add connection state listener
+db.enableNetwork().catch((err) => {
+    console.error('Error enabling network:', err);
+});
+
+firebase.firestore.setLogLevel('debug');
 
 // Export services
 window.auth = auth;
 window.db = db;
-window.storage = storage;
 window.currentUser = null;
 
 // Auth state observer

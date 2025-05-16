@@ -1,4 +1,36 @@
 // Create campaign
+// Función para convertir imagen a Base64
+function convertToBase64(file) {
+    return new Promise((resolve, reject) => {
+        if (file.size > 2 * 1024 * 1024) { // 2MB max
+            reject(new Error('Image size must be less than 2MB'));
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
+        reader.readAsDataURL(file);
+    });
+}
+
+// Función para previsualizar imagen
+function previewImage(file) {
+    const preview = document.getElementById('paymentProofPreview');
+    const reader = new FileReader();
+
+    reader.onload = () => {
+        preview.innerHTML = `
+            <div class="preview-container">
+                <img src="${reader.result}" alt="Payment proof preview">
+                <span class="preview-filename">${file.name}</span>
+            </div>
+        `;
+    };
+
+    reader.readAsDataURL(file);
+}
+
 async function handleCreateCampaign(event) {
     event.preventDefault();
     
@@ -10,6 +42,11 @@ async function handleCreateCampaign(event) {
         const accountCount = parseInt(document.getElementById('accountCount').value);
         const pricePerAccount = parseFloat(document.getElementById('pricePerAccount').value);
         const totalPrice = parseFloat(document.getElementById('totalPrice').value);
+        const paymentProofBase64 = document.getElementById('paymentProofBase64').value;
+
+        if (!paymentProofBase64) {
+            throw new Error('Please select a payment proof screenshot');
+        }
         
         const campaignData = {
             name,
@@ -21,20 +58,24 @@ async function handleCreateCampaign(event) {
             verificationCount: 0,
             createdBy: currentUser.uid,
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-            status: 'pending' // Las campañas comienzan como pendientes
+            status: 'pending',
+            paymentProofBase64,
+            paymentStatus: 'pending'
         };
         
         await db.collection('campaigns').add(campaignData);
         
         // Limpiar el formulario y cerrar el modal
         document.getElementById('createCampaignForm').reset();
+        document.getElementById('paymentProofBase64').value = '';
+        document.getElementById('paymentProofPreview').innerHTML = '';
         closeCreateCampaignModal();
         
         // Recargar las campañas
         await loadCampaigns();
         
         // Mostrar mensaje de éxito
-        alert('Campaign created successfully!');
+        alert('Campaign created successfully! Please wait for admin approval of your payment proof.');
     } catch (error) {
         console.error('Error creating campaign:', error);
         alert('Error creating campaign: ' + error.message);
@@ -74,6 +115,27 @@ function initializeEventListeners() {
             pricePerAccountInput.addEventListener('input', calculateTotal);
         }
 
+        // Add event listener for file selection
+        const uploadButton = document.getElementById('uploadButton');
+        const fileInput = document.getElementById('paymentProof');
+
+        if (uploadButton && fileInput) {
+            uploadButton.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    try {
+                        const base64 = await convertToBase64(file);
+                        document.getElementById('paymentProofBase64').value = base64;
+                        previewImage(file);
+                    } catch (error) {
+                        alert(error.message);
+                        fileInput.value = '';
+                    }
+                }
+            });
+        }
+
         // Add event listener for create campaign button
         const createBtn = document.getElementById('createCampaignBtn');
         if (createBtn) {
@@ -90,6 +152,14 @@ function initializeEventListeners() {
         const form = document.getElementById('createCampaignForm');
         if (form) {
             form.addEventListener('submit', handleCreateCampaign);
+        }
+
+        // Add event listener for upload button
+        const uploadBtn = document.getElementById('uploadButton');
+        if (uploadBtn) {
+            uploadBtn.addEventListener('click', () => {
+                cloudinaryWidget.open();
+            });
         }
 
         // Add event listener for logout button

@@ -187,10 +187,10 @@ function renderCampaigns() {
     if (paginatedCampaigns.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="7">
+                <td colspan="8">
                     <div class="empty-state">
-                        <i class='bx bx-search-alt'></i>
-                        <p>No pending campaigns found</p>
+                        <i class='bx bx-folder-open'></i>
+                        <p>No campaigns found</p>
                     </div>
                 </td>
             </tr>
@@ -200,16 +200,39 @@ function renderCampaigns() {
 
     tbody.innerHTML = paginatedCampaigns.map(campaign => `
         <tr>
-            <td><input type="checkbox" class="campaign-checkbox" value="${campaign.id}"></td>
+            <td>
+                <input type="checkbox" class="campaign-checkbox" value="${campaign.id}">
+            </td>
             <td>${campaign.name}</td>
             <td>${campaign.createdBy}</td>
             <td>${campaign.accountCount}</td>
             <td>${campaign.totalPrice} USDT</td>
-            <td>${formatDate(campaign.createdAt)}</td>
+            <td>${campaign.status}</td>
             <td>
-                <button onclick="approveCampaign('${campaign.id}')" class="action-button">
-                    <i class='bx bx-check'></i>
-                </button>
+                ${campaign.paymentProofUrl ? 
+                    `<button onclick="viewPaymentProof('${campaign.paymentProofUrl}')" class="action-button">
+                        <i class='bx bx-image'></i> View
+                    </button>` : 
+                    'No proof uploaded'
+                }
+            </td>
+            <td>${campaign.paymentStatus}</td>
+            <td>
+                ${campaign.paymentStatus === 'pending' ? 
+                    `<div class="action-buttons">
+                        <button onclick="approvePayment('${campaign.id}')" class="action-button approve-btn">
+                            <i class='bx bx-check'></i>
+                        </button>
+                        <button onclick="rejectPayment('${campaign.id}')" class="action-button reject-btn">
+                            <i class='bx bx-x'></i>
+                        </button>
+                    </div>` : 
+                    campaign.paymentStatus === 'approved' && campaign.status === 'pending' ?
+                    `<button onclick="approveCampaign('${campaign.id}')" class="action-button">
+                        <i class='bx bx-check-double'></i> Approve Campaign
+                    </button>` :
+                    ''
+                }
             </td>
         </tr>
     `).join('');
@@ -315,6 +338,57 @@ async function handleApproveSelected() {
     }
 }
 
+// Ver comprobante de pago
+function viewPaymentProof(url) {
+    window.open(url, '_blank');
+}
+
+// Aprobar pago
+async function approvePayment(campaignId) {
+    try {
+        if (!currentUser || userRole !== 'admin') {
+            throw new Error('No tienes permisos de administrador');
+        }
+
+        await db.collection('campaigns').doc(campaignId).update({
+            paymentStatus: 'approved',
+            paymentApprovedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            paymentApprovedBy: currentUser.uid
+        });
+
+        alert('Payment approved successfully!');
+        loadPendingCampaigns();
+    } catch (error) {
+        console.error('Error approving payment:', error);
+        alert(`Error approving payment: ${error.message}`);
+    }
+}
+
+// Rechazar pago
+async function rejectPayment(campaignId) {
+    try {
+        if (!currentUser || userRole !== 'admin') {
+            throw new Error('No tienes permisos de administrador');
+        }
+
+        const reason = prompt('Please enter the reason for rejection:');
+        if (!reason) return; // Si el usuario cancela el prompt
+
+        await db.collection('campaigns').doc(campaignId).update({
+            paymentStatus: 'rejected',
+            paymentRejectedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            paymentRejectedBy: currentUser.uid,
+            paymentRejectionReason: reason
+        });
+
+        alert('Payment rejected successfully!');
+        loadPendingCampaigns();
+    } catch (error) {
+        console.error('Error rejecting payment:', error);
+        alert(`Error rejecting payment: ${error.message}`);
+    }
+}
+
 // Aprobar campaña individual
 async function approveCampaign(campaignId, showAlert = true) {
     try {
@@ -325,6 +399,16 @@ async function approveCampaign(campaignId, showAlert = true) {
         
         if (userRole !== 'admin') {
             throw new Error('User does not have admin privileges');
+        }
+
+        // Verificar que el pago esté aprobado
+        const campaign = await db.collection('campaigns').doc(campaignId).get();
+        if (!campaign.exists) {
+            throw new Error('Campaign not found');
+        }
+
+        if (campaign.data().paymentStatus !== 'approved') {
+            throw new Error('Cannot approve campaign: payment not approved yet');
         }
 
         await db.collection('campaigns').doc(campaignId).update({

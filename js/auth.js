@@ -62,9 +62,9 @@ function handleLogout() {
 }
 
 // Verificar si el usuario es administrador
-async function isAdmin(userId) {
+async function isAdmin(uid) {
     try {
-        const userDoc = await db.collection('users').doc(userId).get();
+        const userDoc = await window.db.collection('users').doc(uid).get();
         return userDoc.exists && userDoc.data().role === 'admin';
     } catch (error) {
         console.error('Error checking admin status:', error);
