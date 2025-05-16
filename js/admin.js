@@ -60,7 +60,7 @@ async function loadApprovedVerifications() {
                 <p>Campaign: ${campaign.data().name}</p>
                 <p>User: ${user.data().email}</p>
                 <p>Amount: ${campaign.data().price} USDT</p>
-                <a href="${verification.proofUrl}" target="_blank" class="text-green">View Payment Proof</a>
+                <button onclick="viewPaymentProof('${verification.paymentProofBase64}')" class="text-green">View Payment Proof</button>
                 <button onclick="releasePayment('${doc.id}')" class="mt-2">Release Payment</button>
             `;
             
@@ -209,8 +209,8 @@ function renderCampaigns() {
             <td>${campaign.totalPrice} USDT</td>
             <td>${campaign.status}</td>
             <td>
-                ${campaign.paymentProofUrl ? 
-                    `<button onclick="viewPaymentProof('${campaign.paymentProofUrl}')" class="action-button">
+                ${campaign.paymentProofBase64 ? 
+                    `<button onclick="viewPaymentProof('${campaign.paymentProofBase64}')" class="action-button">
                         <i class='bx bx-image'></i> View
                     </button>` : 
                     'No proof uploaded'
@@ -339,8 +339,35 @@ async function handleApproveSelected() {
 }
 
 // Ver comprobante de pago
-function viewPaymentProof(url) {
-    window.open(url, '_blank');
+function viewPaymentProof(base64Data) {
+    const modal = document.getElementById('imageModal');
+    const modalImg = document.getElementById('modalImage');
+    const span = document.getElementsByClassName('close')[0];
+
+    // Verificar si el string base64 ya incluye el prefijo data:image
+    const imageUrl = base64Data.startsWith('data:image') ? 
+        base64Data : 
+        `data:image/jpeg;base64,${base64Data}`;
+
+    modalImg.src = imageUrl;
+    modal.style.display = 'block';
+
+    span.onclick = function() {
+        modal.style.display = 'none';
+    }
+
+    modal.onclick = function(event) {
+        if (event.target === modal) {
+            modal.style.display = 'none';
+        }
+    }
+
+    // Manejar errores de carga de imagen
+    modalImg.onerror = function() {
+        console.error('Error loading image');
+        alert('Error loading image. The image data might be corrupted.');
+        modal.style.display = 'none';
+    };
 }
 
 // Aprobar pago
