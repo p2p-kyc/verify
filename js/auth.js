@@ -60,3 +60,63 @@ function handleLogout() {
             alert('Error: ' + error.message);
         });
 }
+
+// Verificar si el usuario es administrador
+async function isAdmin(userId) {
+    try {
+        const userDoc = await db.collection('users').doc(userId).get();
+        return userDoc.exists && userDoc.data().role === 'admin';
+    } catch (error) {
+        console.error('Error checking admin status:', error);
+        return false;
+    }
+}
+
+// Variable global para almacenar el rol del usuario
+let userRole = null;
+
+// Escuchar cambios en el estado de autenticación
+auth.onAuthStateChanged(async (user) => {
+    if (user) {
+        // Usuario autenticado
+        currentUser = user;
+        const userDoc = await db.collection('users').doc(user.uid).get();
+        
+        if (userDoc.exists) {
+            // Actualizar último acceso y guardar rol
+            userRole = userDoc.data().role;
+            await db.collection('users').doc(user.uid).update({
+                lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        } else {
+            // Crear documento de usuario si no existe
+            userRole = 'user'; // rol por defecto
+            await db.collection('users').doc(user.uid).set({
+                email: user.email,
+                role: userRole,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        }
+
+        // Actualizar UI
+        document.querySelectorAll('.auth-required').forEach(el => el.style.display = 'block');
+        document.querySelectorAll('.no-auth-required').forEach(el => el.style.display = 'none');
+        
+        // Mostrar email del usuario
+        const userEmailElements = document.getElementsByClassName('user-email');
+        Array.from(userEmailElements).forEach(element => {
+            element.textContent = user.email;
+        });
+
+        // Redirigir si no es admin y está en admin.html
+        if (window.location.pathname.includes('admin.html') && userRole !== 'admin') {
+            window.location.href = 'index.html';
+        }
+
+    } else {  
+        // Usuario no autenticado
+        document.querySelectorAll('.auth-required').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('.no-auth-required').forEach(el => el.style.display = 'block');
+    }
+})

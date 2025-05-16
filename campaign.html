@@ -34,6 +34,14 @@
                 <h2>Submit Verification</h2>
             </div>
             <form id="verificationForm" onsubmit="return handleSubmitVerification(event)">
+                <div class="form-group">
+                    <label for="binanceUser">
+                        <i class='bx bx-user'></i>
+                        Binance Username
+                    </label>
+                    <div class="input-hint">Enter the Binance username used for the transaction</div>
+                    <input type="text" id="binanceUser" required placeholder="Your Binance username">
+                </div>
                 <div class="file-upload-container">
                     <div class="file-upload-area" onclick="document.getElementById('paymentProof').click()">
                         <i class='bx bx-image-add'></i>

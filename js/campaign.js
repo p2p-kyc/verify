@@ -261,45 +261,49 @@ document.getElementById('paymentProof').addEventListener('change', function(even
 // Handle verification submission
 async function handleSubmitVerification(event) {
     event.preventDefault();
-    
-    const fileInput = document.getElementById('paymentProof');
-    const file = fileInput.files[0];
-    
-    if (!file) {
-        alert('Please select a file');
-        return;
-    }
-    
+    const submitButton = event.target.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+
     try {
+        const file = document.getElementById('paymentProof').files[0];
+        const binanceUser = document.getElementById('binanceUser').value.trim();
+
+        if (!file) {
+            throw new Error('Please select a file');
+        }
+
+        if (!binanceUser) {
+            throw new Error('Please enter your Binance username');
+        }
+
         // Upload file to Firebase Storage
         const storageRef = storage.ref();
-        const fileRef = storageRef.child(`proofs/${campaignId}/${currentUser.uid}/${file.name}`);
+        const fileRef = storageRef.child(`verifications/${campaignId}/${currentUser.uid}/${file.name}`);
         await fileRef.put(file);
-        const downloadUrl = await fileRef.getDownloadURL();
-        
+        const proofUrl = await fileRef.getDownloadURL();
+
         // Create verification document
-        const verificationData = {
+        const verificationRef = await db.collection('verifications').add({
             campaignId,
             userId: currentUser.uid,
-            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            binanceUser,
+            proofUrl,
             status: 'pending',
-            proofUrl: downloadUrl
-        };
-        
-        const verificationRef = await db.collection('verifications').add(verificationData);
-        verification = { id: verificationRef.id, ...verificationData };
-        
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
         // Update campaign verification count
         await db.collection('campaigns').doc(campaignId).update({
             verificationCount: firebase.firestore.FieldValue.increment(1)
         });
-        
-        document.getElementById('verificationSection').style.display = 'none';
-        handleVerificationState();
-        
+
+        // Show success message
+        alert('Verification submitted successfully!');
+        window.location.reload();
     } catch (error) {
         console.error('Error submitting verification:', error);
-        alert('Error submitting verification');
+        alert(error.message);
+        submitButton.disabled = false;
     }
 }
 
