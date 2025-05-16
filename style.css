@@ -249,22 +249,50 @@ a:hover {
     font-size: 2rem;
 }
 
+.campaign-description {
+    margin: 1rem 0;
+    padding: 1rem;
+    background: rgba(0, 255, 156, 0.05);
+    border-radius: 8px;
+    border-left: 3px solid var(--terminal-green);
+}
+
+.campaign-description p {
+    margin: 0;
+    line-height: 1.5;
+    color: var(--text-color);
+}
+
 .campaign-info {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 1rem;
     margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: var(--bg-color);
+    border-radius: 8px;
 }
 
 .info-item {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    padding: 0.5rem;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+}
+
+.info-item:hover {
+    background: rgba(0, 255, 156, 0.05);
 }
 
 .info-item i {
     color: var(--terminal-green);
     font-size: 1.2rem;
+}
+
+.info-item span {
+    font-size: 0.9rem;
 }
 
 .progress-bar {
@@ -481,6 +509,281 @@ a:hover {
     border-radius: 12px;
     box-shadow: 0 0 30px rgba(0, 255, 156, 0.1);
     animation: fadeIn 0.8s ease-out;
+}
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(5px);
+    z-index: 1000;
+    animation: fadeIn 0.3s ease-out;
+    overflow-y: auto;
+    padding: 2rem 0;
+}
+
+.modal-content {
+    position: relative;
+    width: 90%;
+    max-width: 600px;
+    margin: 0 auto;
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 0 30px rgba(0, 255, 156, 0.2);
+    animation: slideIn 0.3s ease-out;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.modal-header h2 {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    color: var(--terminal-green);
+}
+
+.close-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-color);
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.close-btn:hover {
+    color: var(--terminal-green);
+    transform: scale(1.1);
+}
+
+.modal form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-top: 1rem;
+}
+
+.modal .input-group {
+    margin-bottom: 0;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.cancel-btn {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+}
+
+.submit-btn {
+    background: var(--terminal-green);
+    color: var(--bg-color);
+}
+
+.create-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--terminal-green);
+    color: var(--bg-color);
+    padding: 1rem 2rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.create-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 255, 156, 0.2);
+}
+
+/* Form Styles */
+textarea {
+    width: 100%;
+    padding: 0.8rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-color);
+    color: var(--text-color);
+    font-family: inherit;
+    resize: vertical;
+    transition: all 0.3s ease;
+}
+
+textarea:focus {
+    border-color: var(--terminal-green);
+    box-shadow: 0 0 0 2px rgba(0, 255, 156, 0.1);
+}
+
+select {
+    width: 100%;
+    padding: 0.8rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-color);
+    color: var(--text-color);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+select[multiple] {
+    height: 150px;
+}
+
+select:focus {
+    border-color: var(--terminal-green);
+    box-shadow: 0 0 0 2px rgba(0, 255, 156, 0.1);
+}
+
+select option {
+    padding: 0.5rem;
+}
+
+select option:checked {
+    background: var(--terminal-green);
+    color: var(--bg-color);
+}
+
+label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--text-color);
+}
+
+small {
+    display: block;
+    margin-top: 0.5rem;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+/* Animations */
+@keyframes slideIn {
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Campaigns Section */
+.campaigns-section {
+    margin-top: 3rem;
+}
+
+.section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.section-header i {
+    font-size: 1.5rem;
+    color: var(--terminal-green);
+}
+
+.section-header h2 {
+    font-size: 1.5rem;
+    color: var(--text-color);
+    margin: 0;
+}
+
+.campaigns-container {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.1);
+}
+
+/* Campaign Grid */
+.campaigns-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 2rem;
+}
+
+/* Loading State */
+.loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 200px;
+}
+
+.loading i {
+    font-size: 2rem;
+    color: var(--terminal-green);
+}
+
+/* Empty State */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+    text-align: center;
+    color: var(--text-muted);
+}
+
+.empty-state i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+/* Error State */
+.error-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+    text-align: center;
+    color: var(--text-error);
+}
+
+.error-state i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+.error-state button {
+    margin-top: 1rem;
+    background: transparent;
+    border: 1px solid var(--text-error);
+    color: var(--text-error);
+    padding: 0.5rem 1.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.error-state button:hover {
+    background: var(--text-error);
+    color: var(--bg-color);
 }
 
 /* Utils */
