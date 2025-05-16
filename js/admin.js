@@ -89,8 +89,79 @@ async function releasePayment(verificationId) {
     }
 }
 
+// Cargar campañas pendientes
+async function loadPendingCampaigns() {
+    try {
+        const campaignsDiv = document.getElementById('pendingCampaigns');
+        campaignsDiv.innerHTML = '';
+
+        const snapshot = await db.collection('campaigns')
+            .where('status', '==', 'pending')
+            .orderBy('createdAt', 'desc')
+            .get();
+
+        if (snapshot.empty) {
+            campaignsDiv.innerHTML = '<p>No pending campaigns</p>';
+            return;
+        }
+
+        for (const doc of snapshot.docs) {
+            const campaign = doc.data();
+            const div = document.createElement('div');
+            div.className = 'campaign-card';
+            div.innerHTML = `
+                <h3>${campaign.name}</h3>
+                <p>Created by: ${campaign.createdBy}</p>
+                <p>Account Count: ${campaign.accountCount}</p>
+                <p>Price per Account: ${campaign.pricePerAccount} USDT</p>
+                <p>Total Price: ${campaign.totalPrice} USDT</p>
+                <button onclick="approveCampaign('${doc.id}')">Approve Campaign</button>
+            `;
+            campaignsDiv.appendChild(div);
+        }
+    } catch (error) {
+        console.error('Error loading pending campaigns:', error);
+        const campaignsDiv = document.getElementById('pendingCampaigns');
+        
+        if (error.message.includes('requires an index')) {
+            campaignsDiv.innerHTML = `
+                <div class="loading-state">
+                    <i class='bx bx-loader-alt bx-spin'></i>
+                    <p>Setting up database indexes...</p>
+                    <small>This may take a few minutes</small>
+                </div>
+            `;
+        } else {
+            campaignsDiv.innerHTML = `
+                <div class="error-state">
+                    <i class='bx bx-error-circle'></i>
+                    <p>Error loading campaigns</p>
+                    <button onclick="loadPendingCampaigns()">Retry</button>
+                </div>
+            `;
+        }
+    }
+}
+
+// Aprobar campaña
+async function approveCampaign(campaignId) {
+    try {
+        await db.collection('campaigns').doc(campaignId).update({
+            status: 'approved',
+            approvedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        alert('Campaign approved successfully!');
+        loadPendingCampaigns(); // Recargar la lista
+    } catch (error) {
+        console.error('Error approving campaign:', error);
+        alert('Error approving campaign');
+    }
+}
+
 // Initialize admin page
 document.addEventListener('DOMContentLoaded', () => {
     checkAdmin();
     loadApprovedVerifications();
+    loadPendingCampaigns();
 });

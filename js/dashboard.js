@@ -21,7 +21,7 @@ async function handleCreateCampaign(event) {
             verificationCount: 0,
             createdBy: currentUser.uid,
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-            status: 'active'
+            status: 'pending' // Las campañas comienzan como pendientes
         };
         
         await db.collection('campaigns').add(campaignData);
@@ -107,20 +107,30 @@ function initializeEventListeners() {
 // Load campaigns
 async function loadCampaigns() {
     const campaignsContainer = document.getElementById('availableCampaigns');
-    campaignsContainer.innerHTML = '<div class="loading"><i class="bx bx-loader-alt bx-spin"></i></div>';
-    
+    if (!campaignsContainer) {
+        console.error('Campaigns container not found');
+        return;
+    }
+
     try {
+        campaignsContainer.innerHTML = `
+            <div class="loading-state">
+                <i class='bx bx-loader-alt bx-spin'></i>
+                <p>Loading campaigns...</p>
+            </div>
+        `;
+        
+        // Solo cargar campañas aprobadas
         const querySnapshot = await db.collection('campaigns')
+            .where('status', '==', 'approved')
             .orderBy('createdAt', 'desc')
             .get();
-        
-        campaignsContainer.innerHTML = '';
         
         if (querySnapshot.empty) {
             campaignsContainer.innerHTML = `
                 <div class="empty-state">
                     <i class='bx bx-search-alt'></i>
-                    <p>No campaigns available.</p>
+                    <p>No approved campaigns available.</p>
                 </div>
             `;
             return;
@@ -139,16 +149,27 @@ async function loadCampaigns() {
             campaignsGrid.appendChild(campaignCard);
         });
         
+        campaignsContainer.innerHTML = '';
         campaignsContainer.appendChild(campaignsGrid);
     } catch (error) {
         console.error('Error loading campaigns:', error);
-        campaignsContainer.innerHTML = `
-            <div class="error-state">
-                <i class='bx bx-error-circle'></i>
-                <p>Error loading campaigns. Please try again.</p>
-                <button onclick="loadCampaigns()">Retry</button>
-            </div>
-        `;
+        if (error.message.includes('requires an index')) {
+            campaignsContainer.innerHTML = `
+                <div class="loading-state">
+                    <i class='bx bx-loader-alt bx-spin'></i>
+                    <p>Setting up database indexes...</p>
+                    <small>This may take a few minutes</small>
+                </div>
+            `;
+        } else {
+            campaignsContainer.innerHTML = `
+                <div class="error-state">
+                    <i class='bx bx-error-circle'></i>
+                    <p>Error loading campaigns. Please try again.</p>
+                    <button onclick="loadCampaigns()">Retry</button>
+                </div>
+            `;
+        }
     }
 }
 
