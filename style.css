@@ -201,6 +201,21 @@ button:hover::before {
     left: 100%;
 }
 
+.pending-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: var(--warning-color);
+    color: var(--bg-color);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.875rem;
+}
+
+.pending-badge i {
+    font-size: 1rem;
+}
+
 /* Campaign Card Buttons */
 .campaign-card button.text-green {
     background: transparent;
@@ -1078,6 +1093,56 @@ small {
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
+.campaign-card {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+.campaign-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.9em;
+    font-weight: 500;
+    margin-bottom: 10px;
+}
+
+.campaign-status i {
+    font-size: 1.1em;
+}
+
+.status-pending {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.status-approved {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status-paused {
+    background-color: #e2e3e5;
+    color: #383d41;
+}
+
+.status-completed {
+    background-color: #cce5ff;
+    color: #004085;
+}
+
+.status-rejected {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
 /* Error state */
 .error-state {
     text-align: center;
@@ -1650,4 +1715,36 @@ small {
 
 .text-center {
     text-align: center;
+}
+
+/* Offline message */
+.offline-message {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background-color: #fff3cd;
+    color: #856404;
+    padding: 12px 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    z-index: 1000;
+    animation: slideIn 0.3s ease-out;
+}
+
+.offline-message i {
+    font-size: 1.2em;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
 }

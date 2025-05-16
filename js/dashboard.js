@@ -1,3 +1,16 @@
+// Función para formatear fechas
+function formatDate(timestamp) {
+    if (!timestamp) return 'N/A';
+    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
 // Create campaign
 // Función para convertir imagen a Base64
 function convertToBase64(file) {
@@ -107,12 +120,59 @@ function calculateTotal() {
 // Initialize event listeners
 function initializeEventListeners() {
     try {
+        // Add event listeners for modal
+        const createCampaignButton = document.getElementById('createCampaignBtn');
+        const closeModalButton = document.querySelector('.close-btn');
+        const modal = document.getElementById('createCampaignModal');
+
+        if (createCampaignButton) {
+            createCampaignButton.addEventListener('click', openCreateCampaignModal);
+        }
+
+        if (closeModalButton) {
+            closeModalButton.addEventListener('click', closeCreateCampaignModal);
+        }
+
+        // Close modal when clicking outside
+        if (modal) {
+            window.addEventListener('click', (event) => {
+                if (event.target === modal) {
+                    closeCreateCampaignModal();
+                }
+            });
+        }
+
         // Add event listeners for calculation
         const accountCountInput = document.getElementById('accountCount');
         const pricePerAccountInput = document.getElementById('pricePerAccount');
+
         if (accountCountInput && pricePerAccountInput) {
             accountCountInput.addEventListener('input', calculateTotal);
             pricePerAccountInput.addEventListener('input', calculateTotal);
+        }
+
+        // Add event listener for payment proof upload
+        const paymentProofInput = document.getElementById('paymentProof');
+        if (paymentProofInput) {
+            paymentProofInput.addEventListener('change', async (event) => {
+                const file = event.target.files[0];
+                if (file) {
+                    try {
+                        const base64 = await convertToBase64(file);
+                        document.getElementById('paymentProofBase64').value = base64;
+                        previewImage(file);
+                    } catch (error) {
+                        console.error('Error processing payment proof:', error);
+                        alert(error.message);
+                    }
+                }
+            });
+        }
+
+        // Add event listener for create campaign form
+        const createCampaignForm = document.getElementById('createCampaignForm');
+        if (createCampaignForm) {
+            createCampaignForm.addEventListener('submit', handleCreateCampaign);
         }
 
         // Add event listener for file selection
@@ -177,61 +237,25 @@ function initializeEventListeners() {
 // Load campaigns
 async function loadCampaigns() {
     const campaignsContainer = document.getElementById('availableCampaigns');
-    if (!campaignsContainer) {
-        console.error('Campaigns container not found');
-        return;
-    }
+    
+    campaignsContainer.innerHTML = `
+        <div class="loading-state">
+            <i class='bx bx-loader-alt bx-spin'></i>
+            <p>Loading campaigns...</p>
+        </div>
+    `;
 
     try {
-        campaignsContainer.innerHTML = `
-            <div class="loading-state">
-                <i class='bx bx-loader-alt bx-spin'></i>
-                <p>Loading campaigns...</p>
-            </div>
-        `;
-        
-        // Solo cargar campañas aprobadas
-        const querySnapshot = await db.collection('campaigns')
-            .where('status', '==', 'approved')
-            .orderBy('createdAt', 'desc')
-            .get();
-        
-        if (querySnapshot.empty) {
-            campaignsContainer.innerHTML = `
-                <div class="empty-state">
-                    <i class='bx bx-search-alt'></i>
-                    <p>No approved campaigns available.</p>
-                </div>
-            `;
-            return;
-        }
-        
-        const campaignsGrid = document.createElement('div');
-        campaignsGrid.className = 'campaigns-grid';
-        
-        querySnapshot.forEach((doc) => {
-            const campaign = {
-                id: doc.id,
-                ...doc.data(),
-                createdAt: doc.data().createdAt?.toDate() || new Date()
-            };
-            const campaignCard = createCampaignCard(doc.id, campaign);
-            campaignsGrid.appendChild(campaignCard);
-        });
-        
-        campaignsContainer.innerHTML = '';
-        campaignsContainer.appendChild(campaignsGrid);
-    } catch (error) {
-        console.error('Error loading campaigns:', error);
-        if (error.message.includes('requires an index')) {
-            campaignsContainer.innerHTML = `
-                <div class="loading-state">
-                    <i class='bx bx-loader-alt bx-spin'></i>
-                    <p>Setting up database indexes...</p>
-                    <small>This may take a few minutes</small>
-                </div>
-            `;
-        } else {
+        // Consulta única para todas las campañas que el usuario puede ver
+        const query = db.collection('campaigns')
+            .where('status', 'in', ['approved', 'pending'])
+            .orderBy('createdAt', 'desc');
+
+        // Escuchar cambios en tiempo real
+        const unsubscribe = query.onSnapshot(snapshot => {
+            updateCampaignsGrid(snapshot);
+        }, error => {
+            console.error('Error loading campaigns:', error);
             campaignsContainer.innerHTML = `
                 <div class="error-state">
                     <i class='bx bx-error-circle'></i>
@@ -239,23 +263,111 @@ async function loadCampaigns() {
                     <button onclick="loadCampaigns()">Retry</button>
                 </div>
             `;
-        }
+        });
+
+        // Guardar la función de cancelación para limpiar el listener
+        window.unsubscribeCampaigns = unsubscribe;
+    } catch (error) {
+        console.error('Error setting up campaigns listener:', error);
+        campaignsContainer.innerHTML = `
+            <div class="error-state">
+                <i class='bx bx-error-circle'></i>
+                <p>Error loading campaigns. Please try again.</p>
+                <button onclick="loadCampaigns()">Retry</button>
+            </div>
+        `;
     }
 }
 
-// Create campaign card
-function createCampaignCard(id, campaign) {
-    const div = document.createElement('div');
-    div.className = 'campaign-card';
+// Función para actualizar el grid de campañas
+function updateCampaignsGrid(snapshot) {
+    const campaignsContainer = document.getElementById('availableCampaigns');
+    let campaignsGrid = document.querySelector('.campaigns-grid');
     
+    // Crear el grid si no existe
+    if (!campaignsGrid) {
+        campaignsGrid = document.createElement('div');
+        campaignsGrid.className = 'campaigns-grid';
+        campaignsContainer.innerHTML = '';
+        campaignsContainer.appendChild(campaignsGrid);
+    }
+
+    // Limpiar el grid existente
+    campaignsGrid.innerHTML = '';
+
+    // Agregar las nuevas campañas
+    snapshot.forEach(doc => {
+        const campaign = {
+            id: doc.id,
+            ...doc.data(),
+            createdAt: doc.data().createdAt?.toDate() || new Date()
+        };
+        const campaignCard = createCampaignCard(doc.id, campaign);
+        campaignCard.setAttribute('data-type', campaign.status);
+        campaignsGrid.appendChild(campaignCard);
+    });
+
+    // Mostrar mensaje si no hay campañas
+    if (campaignsGrid.children.length === 0) {
+        campaignsContainer.innerHTML = `
+            <div class="empty-state">
+                <i class='bx bx-search-alt'></i>
+                <p>No campaigns found</p>
+            </div>
+        `;
+    }
+}
+
+function createCampaignCard(id, campaign) {
     const isOwner = campaign.createdBy === currentUser.uid;
     const progress = (campaign.verificationCount / campaign.accountCount) * 100;
-    const countries = campaign.countries.includes('all') ? 'All Countries' : campaign.countries.join(', ');
-    
+    const countries = campaign.countries.join(', ');
+
+    // Configurar el estado
+    const statusConfig = {
+        'pending': {
+            class: 'status-pending',
+            icon: 'bx-time-five',
+            text: 'Pending'
+        },
+        'approved': {
+            class: 'status-approved',
+            icon: 'bx-check-circle',
+            text: 'Approved'
+        },
+        'paused': {
+            class: 'status-paused',
+            icon: 'bx-pause-circle',
+            text: 'Paused'
+        },
+        'completed': {
+            class: 'status-completed',
+            icon: 'bx-badge-check',
+            text: 'Completed'
+        },
+        'rejected': {
+            class: 'status-rejected',
+            icon: 'bx-x-circle',
+            text: 'Rejected'
+        }
+    };
+
+    const statusInfo = statusConfig[campaign.status] || statusConfig.pending;
+
+    const div = document.createElement('div');
+    div.className = 'campaign-card';
+    div.id = `campaign-${id}`;
+
+    // Definir clases y textos para los diferentes estados
+
     div.innerHTML = `
         <div class="campaign-header">
-            <i class='bx bx-certification' style='color: var(--terminal-green);'></i>
             <h3>${campaign.name}</h3>
+            <div class="campaign-status ${statusInfo.class}">
+                <i class='bx ${statusInfo.icon}'></i>
+                <span>${statusInfo.text}</span>
+            </div>
+            <p class="campaign-date">${formatDate(campaign.createdAt)}</p>
         </div>
         <div class="campaign-description">
             <p>${campaign.description}</p>
@@ -324,15 +436,57 @@ function waitForAuth() {
 // Initialize the dashboard
 async function initializeDashboard() {
     try {
-        // Wait for authentication
-        await waitForAuth();
-        
+        // Initialize event listeners
         initializeEventListeners();
-        await loadCampaigns();
+
+        // Check if user is logged in
+        firebase.auth().onAuthStateChanged((user) => {
+            if (user) {
+                currentUser = user;
+                loadCampaigns();
+
+                // Escuchar cambios en el estado de conexión
+                const unsubscribeConnection = db.collection('campaigns').onSnapshot(() => {
+                    // Conexión establecida
+                }, (error) => {
+                    if (error.code === 'unavailable') {
+                        showOfflineMessage();
+                    }
+                });
+
+                // Guardar función para limpiar el listener
+                window.unsubscribeCampaigns = unsubscribeConnection;
+            } else {
+                window.location.href = 'login.html';
+            }
+        });
     } catch (error) {
         console.error('Error initializing dashboard:', error);
     }
 }
 
+// Función para mostrar mensaje de offline
+function showOfflineMessage() {
+    const offlineMessage = document.createElement('div');
+    offlineMessage.className = 'offline-message';
+    offlineMessage.innerHTML = `
+        <i class='bx bx-wifi-off'></i>
+        <p>You are currently offline. Some features may be limited.</p>
+    `;
+    document.body.appendChild(offlineMessage);
+
+    // Remover el mensaje después de 5 segundos
+    setTimeout(() => {
+        offlineMessage.remove();
+    }, 5000);
+}
+
 // Wait for DOM to be fully loaded
 document.addEventListener('DOMContentLoaded', initializeDashboard);
+
+// Limpiar listeners cuando el usuario salga de la página
+window.addEventListener('beforeunload', () => {
+    if (window.unsubscribeCampaigns) {
+        window.unsubscribeCampaigns();
+    }
+});
