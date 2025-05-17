@@ -207,18 +207,26 @@ async function openChat(requestId) {
 // Agregar mensaje al contenedor
 function appendMessage(message) {
     const messagesContainer = document.getElementById('messagesContainer');
-    const messageClass = message.userId === currentUser.uid ? 'message-sent' : 'message-received';
+    const messageDiv = document.createElement('div');
+    messageDiv.classList.add('message');
+    
+    // Determinar si el mensaje es saliente o entrante
+    const isOutgoing = message.userId === currentUser.uid;
+    messageDiv.classList.add(isOutgoing ? 'outgoing' : 'incoming');
 
-    messagesContainer.innerHTML += `
-        <div class="message ${messageClass}">
-            <div class="message-content">
-                <p>${message.text}</p>
-                <span class="message-time">
-                    ${formatDate(message.createdAt)}
-                </span>
-            </div>
-        </div>
+    // Obtener el rol del usuario para este mensaje
+    const userRole = isOutgoing ? 
+        (activeRequest.userId === currentUser.uid ? 'Vendedor' : 'Comprador') : 
+        (activeRequest.userId === message.userId ? 'Vendedor' : 'Comprador');
+
+    messageDiv.innerHTML = `
+        <div class="user-role">${userRole}</div>
+        <div class="message-content">${message.text}</div>
+        <div class="timestamp">${formatDate(message.createdAt)}</div>
     `;
+
+    messagesContainer.appendChild(messageDiv);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
 // Enviar mensaje

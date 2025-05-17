@@ -4,8 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat - KYC P2P</title>
-    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
 </head>
 <body>
     <div class="container">
@@ -21,7 +24,14 @@
             <!-- Área de chat activo -->
             <div class="chat-area">
                 <div class="chat-header">
-                    <h3 id="chatTitle">Selecciona un chat</h3>
+                    <div class="user-info">
+                        <div class="user-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="user-details">
+                            <h3 id="chatTitle">Selecciona un chat</h3>
+                        </div>
+                    </div>
                     <div id="campaignInfo" class="campaign-info">
                         <!-- Información de la campaña se mostrará aquí -->
                     </div>
@@ -31,18 +41,16 @@
                     <!-- Los mensajes se cargarán aquí -->
                 </div>
 
-                <form id="messageForm" class="message-form" onsubmit="handleMessageSubmit(event)">
-                    <div class="form-group">
-                        <input type="text" id="messageInput" placeholder="Escribe un mensaje..." required>
-                        <button type="submit" class="btn-primary">
-                            <i class='bx bx-send'></i>
-                        </button>
-                    </div>
+                <form id="messageForm" class="chat-input" style="display: none;">
+                    <input type="text" id="messageInput" placeholder="Escribe tu mensaje...">
+                    <button type="submit" id="sendButton">
+                        <i class="fas fa-paper-plane"></i>
+                        <span>Enviar</span>
+                    </button>
                 </form>
             </div>
         </div>
     </div>
-
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
