@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campañas KYC</title>
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Campañas KYC Disponibles</h1>
+            <p>Selecciona una campaña para aplicar como verificador</p>
+        </header>
+
+        <main>
+            <section id="campaignsList" class="campaigns-grid">
+                <!-- Las campañas se cargarán dinámicamente aquí -->
+                <div class="loading">Cargando campañas...</div>
+            </section>
+
+            <section id="requestsSection" class="requests-section" style="display: none;">
+                <h2>Solicitudes Recibidas</h2>
+                <div id="requestsList">
+                    <!-- Las solicitudes se cargarán dinámicamente aquí -->
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    
+    <!-- App Scripts -->
+    <script src="js/config.js"></script>
+    <script src="js/campaign.js"></script>
+
+    <script>
+        // Cargar campañas cuando la página esté lista
+        document.addEventListener('DOMContentLoaded', () => {
+            loadActiveCampaigns();
+        });
+    </script>
+</body>
+</html>

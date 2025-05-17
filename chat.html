@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat - KYC P2P</title>
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="chat-container">
+            <!-- Lista de chats -->
+            <div class="chat-list">
+                <h2>Mis Chats</h2>
+                <div id="chatsList">
+                    <!-- Los chats se cargarán aquí -->
+                </div>
+            </div>
+
+            <!-- Área de chat activo -->
+            <div class="chat-area">
+                <div class="chat-header">
+                    <h3 id="chatTitle">Selecciona un chat</h3>
+                    <div id="campaignInfo" class="campaign-info">
+                        <!-- Información de la campaña se mostrará aquí -->
+                    </div>
+                </div>
+
+                <div id="messagesContainer" class="messages-container">
+                    <!-- Los mensajes se cargarán aquí -->
+                </div>
+
+                <form id="messageForm" class="message-form" onsubmit="handleMessageSubmit(event)">
+                    <div class="form-group">
+                        <input type="text" id="messageInput" placeholder="Escribe un mensaje..." required>
+                        <button type="submit" class="btn-primary">
+                            <i class='bx bx-send'></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    
+    <!-- App Scripts -->
+    <script src="js/config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/chat.js"></script>
+</body>
+</html>

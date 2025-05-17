@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solicitud de Campaña - KYC P2P</title>
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="campaign-details">
+            <h1>Detalles de la Campaña</h1>
+            <div id="campaignInfo">
+                <!-- La información de la campaña se cargará aquí -->
+            </div>
+
+            <div id="requestForm" class="request-form">
+                <h2>Enviar Solicitud</h2>
+                <form id="applicationForm" onsubmit="handleRequestSubmit(event)">
+                    <div class="form-group">
+                        <label for="message">Mensaje para el creador de la campaña:</label>
+                        <textarea id="message" required 
+                            placeholder="Explica por qué quieres unirte a esta campaña..."></textarea>
+                    </div>
+                    <button type="submit" class="btn-primary">Enviar Solicitud</button>
+                </form>
+            </div>
+
+            <div id="requestStatus" class="request-status" style="display: none;">
+                <!-- El estado de la solicitud se mostrará aquí -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    
+    <!-- App Scripts -->
+    <script src="js/config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/campaign-request.js"></script>
+</body>
+</html>

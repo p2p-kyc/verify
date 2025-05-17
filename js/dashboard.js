@@ -409,13 +409,33 @@ function createCampaignCard(id, campaign) {
 }
 
 // View campaign details
-function viewCampaign(id) {
-    window.location.href = `campaign.html?id=${id}`;
+async function viewCampaign(id) {
+    try {
+        const campaignDoc = await db.collection('campaigns').doc(id).get();
+        if (!campaignDoc.exists) {
+            throw new Error('Campaign not found');
+        }
+
+        const campaignData = campaignDoc.data();
+        const isCreator = campaignData.createdBy === currentUser.uid;
+
+        if (isCreator) {
+            // Si es el creador (comprador), va a ver las solicitudes
+            window.location.href = `campaign-requests.html?campaignId=${id}`;
+        } else {
+            // Si no es el creador (vendedor), va a la página para enviar solicitud
+            window.location.href = `campaign-request.html?id=${id}`;
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert(error.message);
+    }
 }
 
 // Join campaign
 function joinCampaign(id) {
-    window.location.href = `campaign.html?id=${id}&action=join`;
+    // El vendedor siempre va a campaign-request.html para enviar solicitud
+    window.location.href = `campaign-request.html?id=${id}`;
 }
 
 // Wait for auth to be ready
