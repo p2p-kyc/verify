@@ -154,48 +154,76 @@ async function openChat(requestId) {
         }
 
         const campaign = campaignDoc.data();
-        const campaignInfo = document.getElementById('campaignInfo');
+        // Obtener referencias a los botones
+        const chargeButton = document.getElementById('chargeButton');
+        const finishButton = document.getElementById('finishButton');
+        
+        // Verificar si hay cobro pendiente
+        const chargeQuery = await db.collection('charges')
+            .where('requestId', '==', requestId)
+            .where('status', '==', 'pending')
+            .get();
 
-        // Verificar si hay cobro pendiente si es vendedor
-        let buttonHtml = '';
-        if (currentUser.uid === requestData.sellerId) {
-            const chargeQuery = await db.collection('charges')
-                .where('requestId', '==', requestId)
-                .where('status', '==', 'pending')
-                .get();
+        const buttonDisabled = !chargeQuery.empty;
 
-            const buttonDisabled = !chargeQuery.empty;
-            buttonHtml = `
-                <div class="payment-action">
-                    <button id="chargeButton" class="btn-charge" onclick="handleCharge()" ${buttonDisabled ? 'disabled' : ''}>
-                        <i class='bx bx-dollar'></i>
-                        <span>${buttonDisabled ? 'Cobro pendiente' : 'Cobrar cuenta'}</span>
-                    </button>
+        // Actualizar información en el modal
+        const modalCampaignInfo = document.getElementById('modalCampaignInfo');
+        if (modalCampaignInfo) {
+            modalCampaignInfo.innerHTML = `
+                <div class="campaign-info">
+                    <h3>${campaign.name}</h3>
+                    <div class="campaign-stats">
+                        <span class="stat">
+                            <i class="bx bx-user-check"></i>
+                            ${campaign.verifiedAccounts || 0}/${campaign.totalAccounts} verificaciones
+                        </span>
+                        <span class="stat">
+                            <i class="bx bx-dollar-circle"></i>
+                            ${campaign.pricePerAccount} USDT por verificación
+                        </span>
+                        <span class="stat">
+                            <i class="bx bx-time"></i>
+                            ${formatDate(campaign.endDate)}
+                        </span>
+                    </div>
                 </div>
             `;
-        }
 
-        // Mostrar info de campaña y botón de cobro
-        campaignInfo.innerHTML = `
-            <div class="campaign-info">
-                <h3>${campaign.name}</h3>
-                <div class="campaign-stats">
-                    <span class="stat">
-                        <i class="bx bx-user-check"></i>
-                        ${campaign.verifiedAccounts || 0}/${campaign.totalAccounts} verificaciones
-                    </span>
-                    <span class="stat">
-                        <i class="bx bx-dollar-circle"></i>
-                        ${campaign.pricePerAccount} USDT por verificación
-                    </span>
-                    <span class="stat">
-                        <i class="bx bx-time"></i>
-                        ${formatDate(campaign.endDate)}
-                    </span>
-                </div>
-            </div>
-            ${buttonHtml}
-        `;
+            // Actualizar estado del botón de confirmar
+            const confirmChargeButton = document.getElementById('confirmChargeButton');
+            if (confirmChargeButton) {
+                confirmChargeButton.disabled = buttonDisabled;
+                confirmChargeButton.innerHTML = buttonDisabled ? `
+                    <i class='bx bx-x'></i>
+                    <span>Cobro pendiente</span>
+                ` : `
+                    <i class='bx bx-check'></i>
+                    <span>Confirmar cobro</span>
+                `;
+            }
+        }
+        
+        // Configurar visibilidad y estado de los botones
+        if (currentUser.uid === requestData.sellerId) {
+            // Es vendedor - ocultar botón de terminar y mostrar botón de cobro
+            finishButton.style.display = 'none';
+            chargeButton.style.display = 'flex';
+            
+            // Actualizar estado del botón de cobro
+            chargeButton.disabled = buttonDisabled;
+            chargeButton.innerHTML = `
+                <i class='bx bx-dollar'></i>
+                <span>${buttonDisabled ? 'Cobro pendiente' : 'Cobrar cuenta'}</span>
+            `;
+        } else if (currentUser.uid === campaign.createdBy) {
+            // Es creador - ocultar botón de cobro y mostrar botón de terminar
+            chargeButton.style.display = 'none';
+            finishButton.style.display = 'flex';
+        } else {
+            // No es ni vendedor ni creador - ocultar ambos botones
+            chargeButton.style.display = 'none';
+            finishButton.style.display = 'none';
+        }
 
         // Obtener datos del otro usuario
         const otherUserId = requestData.sellerId === currentUser.uid ? requestData.buyerId : requestData.sellerId;
@@ -266,15 +294,42 @@ function appendMessage(message) {
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
+// Mostrar modal de cobro
+function showChargeModal() {
+    const modal = document.getElementById('chargeModal');
+    modal.classList.add('show');
+}
+
+// Cerrar modal de cobro
+function closeChargeModal() {
+    const modal = document.getElementById('chargeModal');
+    modal.classList.remove('show');
+}
+
 // Manejar el cobro de la cuenta
 async function handleCharge() {
     try {
-        const chargeButton = document.getElementById('chargeButton');
-        chargeButton.disabled = true;
+        const confirmButton = document.getElementById('confirmChargeButton');
+        confirmButton.disabled = true;
+        confirmButton.innerHTML = `
+            <i class='bx bx-loader-alt bx-spin'></i>
+            <span>Procesando...</span>
+        `;
 
         // Verificar que sea el vendedor
         if (!activeRequest || !currentUser) {
             throw new Error('No hay una solicitud activa');
+        }
+
+        // Verificar si ya existe un cobro pendiente
+        const existingCharges = await db.collection('charges')
+            .where('requestId', '==', activeRequest.id)
+            .where('status', '==', 'pending')
+            .get();
+
+        if (!existingCharges.empty) {
+            alert('Ya existe una solicitud de cobro pendiente para esta cuenta.');
+            return;
         }
 
         // Crear solicitud de cobro
@@ -302,14 +357,29 @@ async function handleCharge() {
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
             });
 
-        // Notificar al comprador
+        // Cerrar modal y notificar
+        closeChargeModal();
         alert('Solicitud de cobro enviada. Esperando aprobación del comprador.');
 
     } catch (error) {
         console.error('Error al enviar cobro:', error);
         alert('Error: ' + error.message);
     } finally {
-        chargeButton.disabled = false;
+        // Actualizar estado de los botones
+        const chargeButton = document.getElementById('chargeButton');
+        const confirmButton = document.getElementById('confirmChargeButton');
+        
+        chargeButton.disabled = true;
+        chargeButton.innerHTML = `
+            <i class='bx bx-x'></i>
+            <span>Cobro pendiente</span>
+        `;
+        
+        confirmButton.disabled = true;
+        confirmButton.innerHTML = `
+            <i class='bx bx-check'></i>
+            <span>Confirmar cobro</span>
+        `;
     }
 }
 

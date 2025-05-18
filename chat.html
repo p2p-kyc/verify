@@ -33,30 +33,44 @@
                                 <h3 id="chatTitle">Selecciona un chat</h3>
                             </div>
                         </div>
-                        <div id="campaignInfo" class="campaign-info">
-                            <div class="campaign-info">
-                                <h3>Campaña xm toods los paices</h3>
-                                <div class="campaign-stats">
-                                    <span class="stat">
-                                        <i class="bx bx-user-check"></i>
-                                        0/8 verificaciones
-                                    </span>
-                                    <span class="stat">
-                                        <i class="bx bx-dollar-circle"></i>
-                                        6 USDT por verificación
-                                    </span>
-                                    <span class="stat">
-                                        <i class="bx bx-time"></i>
-                                        17/5/2025
-                                    </span>
+
+                        <!-- Modal de cobro -->
+                        <div id="chargeModal" class="modal">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h3>Información de la campaña</h3>
+                                    <button class="close-modal" onclick="closeChargeModal()">
+                                        <i class='bx bx-x'></i>
+                                    </button>
+                                </div>
+                                <div id="modalCampaignInfo" class="modal-body">
+                                    <!-- La información de la campaña se cargará aquí -->
+                                </div>
+                                <div class="modal-footer">
+                                    <button class="btn-secondary" onclick="closeChargeModal()">Cancelar</button>
+                                    <button id="confirmChargeButton" class="btn-charge" onclick="handleCharge()">
+                                        <i class='bx bx-check'></i>
+                                        <span>Confirmar cobro</span>
+                                    </button>
                                 </div>
                             </div>
-                            <div class="payment-action">
-                                <button id="chargeButton" class="btn-charge" onclick="handleCharge()">
-                                    <i class='bx bx-dollar'></i>
-                                    <span>Cobrar cuenta</span>
-                            </button>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Botones de acción -->
+                <div class="action-bar">
+                    <div class="payment-action">
+                        <!-- Botón para vendedor -->
+                        <button id="chargeButton" class="btn-action seller-action" onclick="showChargeModal()">
+                            <i class='bx bx-dollar'></i>
+                            <span>Cobrar cuenta</span>
+                        </button>
+                        <!-- Botón para creador -->
+                        <button id="finishButton" class="btn-action creator-action">
+                            <i class='bx bx-check-circle'></i>
+                            <span>Terminar campaña</span>
+                        </button>
                     </div>
                 </div>
 
