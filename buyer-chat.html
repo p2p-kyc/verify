@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat del Comprador - KYC P2P</title>
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="chat-container">
+        <!-- Lista de chats -->
+        <div class="chats-list">
+            <h2>Mis Chats</h2>
+            <div id="chatsList"></div>
+        </div>
+
+        <!-- Área de chat -->
+        <div class="chat-area">
+            <div class="chat-header">
+                <h3 id="chatTitle">Selecciona un chat</h3>
+            </div>
+
+            <!-- Contenedor de mensajes -->
+            <div id="messagesContainer" class="messages-container"></div>
+
+            <!-- Formulario de mensajes -->
+            <form id="messageForm" class="message-form">
+                <input type="text" id="messageInput" placeholder="Escribe un mensaje...">
+                <button type="submit">
+                    <i class='bx bx-send'></i>
+                </button>
+            </form>
+
+            <!-- Botón de terminar campaña -->
+            <button id="finishButton" class="action-button">
+                <i class='bx bx-check-circle'></i>
+                <span>Terminar campaña</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    
+    <!-- App -->
+    <script src="js/config.js"></script>
+    <script src="js/buyer-chat.js"></script>
+</body>
+</html>

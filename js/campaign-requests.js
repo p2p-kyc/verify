@@ -122,8 +122,8 @@ function createRequestItem(request, userData) {
                 </div>
             ` : ''}
             ${request.status === 'accepted' ? `
-                <button onclick="openChat('${request.id}')" class="chat-btn">
-                    <i class='bx bx-message-square-dots'></i> Open Chat
+                <button onclick="openChatWithSeller('${request.id}')" class="chat-btn">
+                    <i class='bx bx-message-square-dots'></i> Abrir Chat
                 </button>
             ` : ''}
         </div>
@@ -156,9 +156,39 @@ async function handleRejectRequest(requestId) {
     }
 }
 
-// Abrir chat
-function openChat(requestId) {
-    window.location.href = `chat.html?requestId=${requestId}`;
+// Abrir chat según el rol del usuario
+async function openChatWithSeller(requestId) {
+    try {
+        // Obtener datos de la solicitud
+        const requestDoc = await db.collection('requests').doc(requestId).get();
+        if (!requestDoc.exists) {
+            throw new Error('Solicitud no encontrada');
+        }
+
+        const requestData = requestDoc.data();
+        const campaignDoc = await db.collection('campaigns').doc(requestData.campaignId).get();
+        
+        if (!campaignDoc.exists) {
+            throw new Error('Campaña no encontrada');
+        }
+
+        const campaignData = campaignDoc.data();
+        const currentUserId = auth.currentUser.uid;
+
+        // Determinar si el usuario es vendedor o comprador
+        if (currentUserId === requestData.userId) {
+            // Es vendedor
+            window.location.href = `chat-vendedor.html?requestId=${requestId}`;
+        } else if (currentUserId === campaignData.createdBy) {
+            // Es comprador (creador de la campaña)
+            window.location.href = `chat-comprador.html?requestId=${requestId}`;
+        } else {
+            throw new Error('No tienes permiso para acceder a este chat');
+        }
+    } catch (error) {
+        console.error('Error al abrir chat:', error);
+        alert('Error: ' + error.message);
+    }
 }
 
 // Obtener datos de usuario
@@ -169,6 +199,8 @@ async function getUserData(userId) {
         ...userDoc.data()
     };
 }
+
+// Ya no necesitamos esta función porque llamamos directamente a openChatWithSeller
 
 // Utilidades
 function formatDate(timestamp) {

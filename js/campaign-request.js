@@ -132,10 +132,10 @@ function displayRequestStatus(request) {
                     <i class='bx bx-check-circle'></i>
                     <h3>Solicitud Aceptada</h3>
                     <p>¡Felicidades! Has sido aceptado en esta campaña.</p>
-                    <a href="chat.html?requestId=${request.id}" class="btn-primary">
+                    <button onclick="openChatWithSeller('${request.id}')" class="btn-primary">
                         <i class='bx bx-message-square-dots'></i>
                         Ir al Chat
-                    </a>
+                    </button>
                 </div>
             `;
             break;
@@ -206,8 +206,36 @@ async function handleRequestSubmit(event) {
     }
 }
 
+// Abrir chat según el rol del usuario
+async function openChatWithSeller(requestId) {
+    try {
+        // Obtener datos de la solicitud
+        const requestDoc = await db.collection('requests').doc(requestId).get();
+        if (!requestDoc.exists) {
+            throw new Error('Solicitud no encontrada');
+        }
+
+        const requestData = requestDoc.data();
+        const campaignDoc = await db.collection('campaigns').doc(requestData.campaignId).get();
+        
+        if (!campaignDoc.exists) {
+            throw new Error('Campaña no encontrada');
+        }
+
+        const campaignData = campaignDoc.data();
+        const currentUserId = auth.currentUser.uid;
+
+        // En campaign-request.js, el usuario actual es el vendedor
+        // ya que esta página es para ver el estado de una solicitud
+        window.location.href = `chat-vendedor.html?requestId=${requestId}`;
+    } catch (error) {
+        console.error('Error al abrir chat:', error);
+        alert('Error: ' + error.message);
+    }
+}
+
 // Utilidades
 function formatDate(timestamp) {
-    if (!timestamp) return 'Fecha desconocida';
+    if (!timestamp) return '';
     return new Date(timestamp.seconds * 1000).toLocaleString();
 }
