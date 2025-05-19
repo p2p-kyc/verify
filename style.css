@@ -8,8 +8,8 @@
     --surface-color: #3a3b3c;
     --terminal-green: #00FF9C;
     --terminal-blue: #0066FF;
-    --primary-color: #2374e1;
-    --primary-hover: #1b64c9;
+    --primary-color: var(--terminal-green);
+    --primary-hover: #00cc7d;
     --text-color: #e4e6eb;
     --text-secondary: #b0b3b8;
     --border-color: #3e4042;
