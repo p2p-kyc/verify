@@ -222,12 +222,45 @@
         .chat-header-text h3 {
             margin: 0;
             font-size: 1rem;
+            font-weight: 500;
+            color: var(--text-primary);
         }
 
         .chat-header-text p {
             margin: 4px 0 0;
             font-size: 0.85rem;
-            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .campaign-title {
+            color: var(--whatsapp-light-green);
+        }
+
+        .campaign-status {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            background-color: var(--text-secondary);
+            color: var(--text-primary);
+        }
+
+        .campaign-status.active {
+            background-color: var(--whatsapp-light-green);
+        }
+
+        .campaign-status.pending_payment {
+            background-color: #ffc107;
+            color: #000;
+        }
+
+        .campaign-status.completed {
+            background-color: #2196f3;
+        }
+
+        .campaign-status.cancelled {
+            background-color: #f44336;
         }
 
         #messagesContainer {
@@ -271,6 +304,52 @@
             color: var(--message-timestamp);
             float: right;
             opacity: 0.7;
+        }
+
+        .message-time {
+            font-size: 0.75rem;
+            color: var(--message-timestamp);
+            margin-left: 8px;
+        }
+
+        /* Estilos para mensajes de cobro */
+        .charge-message {
+            font-weight: 500;
+            color: var(--whatsapp-light-green);
+        }
+
+        .charge-content {
+            background-color: rgba(76, 175, 80, 0.1);
+            border: 1px solid var(--whatsapp-light-green);
+        }
+
+        .charge-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .charge-actions .action-button {
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .charge-actions .action-button i {
+            font-size: 1rem;
+        }
+
+        .charge-actions .approve {
+            background-color: var(--whatsapp-light-green);
+            color: white;
+        }
+
+        .charge-actions .reject {
+            background-color: #f44336;
+            color: white;
         }
 
         .message-form {
@@ -364,8 +443,41 @@
             pointer-events: none;
         }
 
-        #chargeButton:hover::after {
+        .chat-header-actions {
+            margin-left: auto;
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-button {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            background-color: var(--whatsapp-green);
+            color: white;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
             opacity: 1;
+        }
+
+        .action-button:hover:not(:disabled) {
+            background-color: var(--whatsapp-light-green);
+            opacity: 0.9;
+        }
+
+        .action-button:disabled {
+            background-color: var(--whatsapp-green) !important;
+            cursor: pointer !important;
+            opacity: 1 !important;
+            pointer-events: auto !important;
+        }
+
+        .action-button i {
+            font-size: 1.1rem;
         }
     </style>
 </head>
@@ -392,6 +504,9 @@
                         <h3 id="chatTitle">Selecciona un chat</h3>
                         <p id="campaignInfo"></p>
                     </div>
+                </div>
+                <div class="chat-header-actions" id="headerActions">
+                    <!-- El botón se agregará dinámicamente cuando se seleccione un chat -->
                 </div>
             </div>
             <div id="messagesContainer">

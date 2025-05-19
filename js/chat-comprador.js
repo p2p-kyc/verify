@@ -13,8 +13,10 @@ const finishButton = document.getElementById('finishButton');
 messageForm.addEventListener('submit', handleMessageSubmit);
 finishButton.addEventListener('click', handleFinishCampaign);
 
-// Escuchar cambios de autenticación
-auth.onAuthStateChanged(async user => {
+// Esperar a que Firebase esté inicializado
+window.addEventListener('load', () => {
+    // Escuchar cambios de autenticación
+    window.auth.onAuthStateChanged(async user => {
     if (!user) {
         window.location.href = 'index.html';
         return;
@@ -29,6 +31,7 @@ auth.onAuthStateChanged(async user => {
     if (requestId) {
         openChat(requestId);
     }
+    });
 });
 
 // Cargar chats del comprador
@@ -38,7 +41,7 @@ async function loadBuyerChats() {
         console.log('Cargando chats del comprador:', currentUser.uid);
 
         // Buscar campañas creadas por el usuario
-        const campaigns = await db.collection('campaigns')
+        const campaigns = await window.db.collection('campaigns')
             .where('createdBy', '==', currentUser.uid)
             .get();
 
@@ -49,7 +52,7 @@ async function loadBuyerChats() {
             const campaignData = campaignDoc.data();
             const campaignId = campaignDoc.id;
 
-            const requests = await db.collection('requests')
+            const requests = await window.db.collection('requests')
                 .where('campaignId', '==', campaignId)
                 .get();
 
@@ -119,7 +122,7 @@ async function loadBuyerChats() {
 // Obtener último mensaje de un chat
 async function getLastMessage(requestId) {
     try {
-        const messages = await db.collection('requests')
+        const messages = await window.db.collection('requests')
             .doc(requestId)
             .collection('messages')
             .orderBy('createdAt', 'desc')
@@ -155,7 +158,7 @@ async function openChat(requestId) {
         }
 
         // Obtener datos de la solicitud
-        const requestDoc = await db.collection('requests').doc(requestId).get();
+        const requestDoc = await window.db.collection('requests').doc(requestId).get();
         if (!requestDoc.exists) {
             throw new Error('Chat no encontrado');
         }
@@ -163,7 +166,7 @@ async function openChat(requestId) {
         const requestData = requestDoc.data();
         
         // Obtener datos de la campaña
-        const campaignDoc = await db.collection('campaigns').doc(requestData.campaignId).get();
+        const campaignDoc = await window.db.collection('campaigns').doc(requestData.campaignId).get();
         if (!campaignDoc.exists) {
             throw new Error('Campaña no encontrada');
         }
@@ -204,23 +207,14 @@ async function openChat(requestId) {
             messagesListener();
         }
 
-        // Cargar mensajes existentes
-        const messages = await db.collection('requests')
-            .doc(requestId)
-            .collection('messages')
-            .orderBy('createdAt', 'asc')
-            .get();
-
-        messages.forEach(doc => {
-            appendMessage(doc.data());
-        });
-
-        // Escuchar nuevos mensajes
-        messagesListener = db.collection('requests')
+        // Escuchar mensajes (existentes y nuevos)
+        messagesListener = window.db.collection('requests')
             .doc(requestId)
             .collection('messages')
             .orderBy('createdAt', 'asc')
             .onSnapshot(snapshot => {
+                if (snapshot.metadata.hasPendingWrites) return;
+                
                 snapshot.docChanges().forEach(change => {
                     if (change.type === 'added') {
                         appendMessage(change.doc.data());
@@ -248,14 +242,15 @@ async function handleMessageSubmit(event) {
     if (!text) return;
 
     try {
-        await db.collection('requests')
+        const message = {
+            text,
+            userId: currentUser.uid,
+            createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
+        };
+        await window.db.collection('requests')
             .doc(activeRequest.id)
             .collection('messages')
-            .add({
-                text,
-                userId: currentUser.uid,
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            });
+            .add(message);
 
         messageInput.value = '';
 
@@ -278,7 +273,7 @@ async function handleFinishCampaign() {
 
     try {
         // Actualizar estado de la campaña
-        await db.collection('campaigns').doc(activeRequest.campaign.id).update({
+        await window.db.collection('campaigns').doc(activeRequest.campaign.id).update({
             status: 'completed',
             completedAt: firebase.firestore.FieldValue.serverTimestamp()
         });
@@ -327,7 +322,7 @@ function appendMessage(message) {
 // Obtener datos de usuario
 async function getUserData(userId) {
     try {
-        const userDoc = await db.collection('users').doc(userId).get();
+        const userDoc = await window.db.collection('users').doc(userId).get();
         return userDoc.exists ? userDoc.data() : { email: 'Usuario desconocido' };
     } catch (error) {
         console.error('Error getting user data:', error);

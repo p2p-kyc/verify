@@ -8,6 +8,41 @@ const messageForm = document.getElementById('messageForm');
 const messageInput = document.getElementById('messageInput');
 const messagesContainer = document.getElementById('messagesContainer');
 const sendButton = document.getElementById('sendButton');
+const headerActions = document.getElementById('headerActions');
+
+// Función para crear el botón de cobro
+function createChargeButton(campaign) {
+    console.log('Creando botón de cobro con campaña:', campaign);
+    // Limpiar botón anterior si existe
+    headerActions.innerHTML = '';
+
+    // Crear nuevo botón
+    const button = document.createElement('button');
+    button.className = 'action-button';
+    button.title = 'Cobrar cuenta';
+    button.innerHTML = `
+        <i class='bx bx-dollar'></i>
+        <span>Cobrar cuenta</span>
+    `;
+
+    // Configurar el estado del botón
+    const isActive = campaign?.status === 'active';
+    console.log('Estado de la campaña:', campaign?.status);
+    console.log('Botón estará:', isActive ? 'activo' : 'inactivo');
+    
+    if (!isActive) {
+        button.title = 'La campaña no está activa';
+        button.style.opacity = '0.7';
+        button.style.cursor = 'not-allowed';
+    }
+
+    // Agregar evento click
+    button.addEventListener('click', requestPayment);
+
+    // Agregar al contenedor
+    headerActions.appendChild(button);
+    return button;
+}
 
 // Event listeners
 messageForm.addEventListener('submit', handleMessageSubmit);
@@ -161,48 +196,56 @@ async function openChat(requestId) {
             throw new Error('No tienes permiso para ver este chat');
         }
 
-        activeRequest = {
-            id: requestDoc.id,
-            ...requestData
-        };
-
         // Obtener datos de la campaña
+        console.log('Obteniendo campaña:', requestData.campaignId);
         const campaignDoc = await window.db.collection('campaigns').doc(requestData.campaignId).get();
         if (!campaignDoc.exists) {
             throw new Error('Campaña no encontrada');
         }
 
-        const campaign = campaignDoc.data();
+        const campaignData = campaignDoc.data();
+        console.log('Datos de la campaña obtenidos:', campaignData);
         
-        // Obtener datos del comprador
-        const buyerData = await getUserData(campaign.createdBy);
+        // Asegurarse de que el estado sea correcto
+        if (!campaignData.status) {
+            campaignData.status = 'active'; // Estado por defecto si no existe
+        }
+
+        // Guardar referencia a la solicitud activa y la campaña
+        activeRequest = {
+            id: requestId,
+            data: requestData,
+            campaign: {
+                id: campaignDoc.id,
+                data: campaignData
+            }
+        };
+        
+        // Obtener datos del usuario que hizo la solicitud
+        const userData = await getUserData(requestData.userId);
         
         // Mostrar información del chat
-        document.getElementById('chatTitle').textContent = buyerData.name || buyerData.email;
+        document.getElementById('chatTitle').textContent = userData.name || userData.email;
         document.getElementById('campaignInfo').innerHTML = `
-            <p>${campaign.name} - ${campaign.status}</p>
+            <span class="campaign-title">${campaignData.name}</span>
+            <span class="campaign-status ${campaignData.status}">${formatStatus(campaignData.status)}</span>
         `;
+
+        // Crear botón de cobro
+        console.log('Datos de la campaña antes de crear botón:', campaignData);
+        createChargeButton(campaignData);
 
         // Limpiar mensajes anteriores
         messagesContainer.innerHTML = '';
 
-        // Cargar mensajes existentes
-        const messages = await window.db.collection('requests')
-            .doc(requestId)
-            .collection('messages')
-            .orderBy('createdAt', 'asc')
-            .get();
-
-        messages.forEach(doc => {
-            appendMessage(doc.data());
-        });
-
-        // Escuchar nuevos mensajes
+        // Escuchar mensajes (existentes y nuevos)
         messagesListener = window.db.collection('requests')
             .doc(requestId)
             .collection('messages')
             .orderBy('createdAt', 'asc')
             .onSnapshot(snapshot => {
+                if (snapshot.metadata.hasPendingWrites) return;
+                
                 snapshot.docChanges().forEach(change => {
                     if (change.type === 'added') {
                         appendMessage(change.doc.data());
@@ -276,36 +319,57 @@ async function handleCharge() {
 }
 
 // Agregar mensaje al contenedor
-function appendMessage(message) {
-    const messageDiv = document.createElement('div');
-    messageDiv.classList.add('message');
-    messageDiv.classList.add(message.userId === currentUser.uid ? 'outgoing' : 'incoming');
-    messageDiv.dataset.timestamp = message.createdAt?.seconds || Date.now() / 1000;
-    
-    messageDiv.innerHTML = `
-        <div class="message-content">${message.text}</div>
-        <div class="timestamp">${formatDate(message.createdAt)}</div>
-    `;
+async function appendMessage(message) {
+    try {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${message.userId === currentUser.uid ? 'outgoing' : 'incoming'}`;
 
-    // Encontrar la posición correcta para insertar el mensaje
-    const messages = Array.from(messagesContainer.children);
-    const position = messages.findIndex(existing => {
-        const existingTime = parseFloat(existing.dataset.timestamp);
-        const newTime = parseFloat(messageDiv.dataset.timestamp);
-        return newTime < existingTime;
-    });
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'message-content';
 
-    if (position === -1) {
-        // Si no se encuentra una posición, agregar al final
+        const textSpan = document.createElement('span');
+        textSpan.className = 'message-text';
+
+        // Aplicar estilo especial si es un mensaje de cobro
+        if (message.type === 'charge') {
+            textSpan.classList.add('charge-message');
+            contentDiv.classList.add('charge-content');
+
+            // Agregar botones de acción si el mensaje es para el comprador
+            if (activeRequest?.campaign?.data?.createdBy === currentUser.uid) {
+                const actionsDiv = document.createElement('div');
+                actionsDiv.className = 'charge-actions';
+
+                const approveButton = document.createElement('button');
+                approveButton.className = 'action-button approve';
+                approveButton.innerHTML = '<i class="bx bx-check"></i> Aprobar';
+                approveButton.onclick = () => handlePaymentResponse(message.paymentRequestId, 'approved');
+
+                const rejectButton = document.createElement('button');
+                rejectButton.className = 'action-button reject';
+                rejectButton.innerHTML = '<i class="bx bx-x"></i> Rechazar';
+                rejectButton.onclick = () => handlePaymentResponse(message.paymentRequestId, 'rejected');
+
+                actionsDiv.appendChild(approveButton);
+                actionsDiv.appendChild(rejectButton);
+                contentDiv.appendChild(actionsDiv);
+            }
+        }
+
+        textSpan.textContent = message.text;
+
+        const timeSpan = document.createElement('span');
+        timeSpan.className = 'message-time';
+        timeSpan.textContent = formatDate(message.createdAt);
+
+        contentDiv.appendChild(textSpan);
+        contentDiv.appendChild(timeSpan);
+        messageDiv.appendChild(contentDiv);
+
         messagesContainer.appendChild(messageDiv);
-    } else {
-        // Insertar en la posición correcta
-        messagesContainer.insertBefore(messageDiv, messages[position]);
-    }
-
-    // Scroll al último mensaje si es un mensaje nuevo
-    if (!message.createdAt || message.createdAt?.seconds >= Date.now() / 1000 - 1) {
         scrollToBottom();
+    } catch (error) {
+        console.error('Error al agregar mensaje:', error);
     }
 }
 
@@ -318,6 +382,166 @@ async function getUserData(userId) {
         console.error('Error getting user data:', error);
         return { email: 'Error al cargar usuario' };
     }
+}
+
+// Solicitar pago
+async function requestPayment() {
+    try {
+        if (!activeRequest?.campaign?.id) {
+            alert('Por favor selecciona un chat primero');
+            return;
+        }
+
+        // Deshabilitar visualmente el botón mientras se procesa
+        const button = headerActions.querySelector('button');
+        button.style.opacity = '0.7';
+        button.style.cursor = 'wait';
+
+        // Verificar estado de la campaña
+        const campaignDoc = await window.db.collection('campaigns')
+            .doc(activeRequest.campaign.id)
+            .get();
+
+        if (!campaignDoc.exists) {
+            throw new Error('Campaña no encontrada');
+        }
+
+        const campaignData = campaignDoc.data();
+        console.log('Estado actual de la campaña:', campaignData);
+
+        // Verificar si la campaña tiene pago aprobado
+        console.log('Estado de pago de la campaña:', campaignData.paymentStatus);
+        
+        // Verificar el estado de pago
+        if (campaignData.paymentStatus !== 'approved') {
+            throw new Error('El pago de la campaña no está aprobado');
+        }
+
+        console.log('Pago de la campaña aprobado');
+
+        // Verificar estado de la campaña
+        console.log('Estado de la campaña:', campaignData.status);
+
+        // Verificar estado de la campaña
+        if (campaignData.status !== 'active' && campaignData.status !== 'approved') {
+            throw new Error('La campaña no está activa o aprobada');
+        }
+
+        // Crear solicitud de pago
+        const paymentRequest = {
+            sellerId: currentUser.uid,
+            buyerId: campaignData.createdBy,
+            campaignId: activeRequest.campaign.id,
+            requestId: activeRequest.id,
+            amount: campaignData.totalPrice,
+            currency: 'USDT',
+            status: 'pending',
+            createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
+        };
+
+        // Guardar solicitud de pago
+        const paymentRequestRef = await window.db.collection('payment_requests').add(paymentRequest);
+
+        // Crear mensaje de cobro
+        const message = {
+            text: `💰 El vendedor ha solicitado el pago de $${campaignData.totalPrice} USDT`,
+            userId: currentUser.uid,
+            type: 'charge',
+            amount: campaignData.totalPrice,
+            currency: 'USDT',
+            paymentRequestId: paymentRequestRef.id,
+            createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
+        };
+
+        // Guardar mensaje
+        await window.db.collection('requests')
+            .doc(activeRequest.id)
+            .collection('messages')
+            .add(message);
+
+        // Actualizar estado de la campaña
+        await window.db.collection('campaigns')
+            .doc(activeRequest.campaign.id)
+            .update({
+                status: 'pending_payment',
+                chargeRequestedAt: window.firebase.firestore.FieldValue.serverTimestamp(),
+                currentPaymentRequest: paymentRequestRef.id
+            });
+
+    } catch (error) {
+        console.error('Error al procesar el pago:', error);
+        alert('Error al procesar el pago: ' + error.message);
+        
+        // Re-habilitar visualmente el botón en caso de error
+        const button = headerActions.querySelector('button');
+        if (button) {
+            button.style.opacity = '1';
+            button.style.cursor = 'pointer';
+        }
+    }
+}
+
+// Manejar respuesta de pago
+async function handlePaymentResponse(paymentRequestId, response) {
+    try {
+        // Obtener la solicitud de pago
+        const paymentRequestDoc = await window.db.collection('payment_requests').doc(paymentRequestId).get();
+        if (!paymentRequestDoc.exists) {
+            throw new Error('Solicitud de pago no encontrada');
+        }
+
+        const paymentRequestData = paymentRequestDoc.data();
+
+        // Verificar que la solicitud esté pendiente
+        if (paymentRequestData.status !== 'pending') {
+            throw new Error('Esta solicitud de pago ya fue procesada');
+        }
+
+        // Actualizar estado de la solicitud
+        await window.db.collection('payment_requests').doc(paymentRequestId).update({
+            status: response,
+            respondedAt: window.firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        // Actualizar estado de la campaña
+        await window.db.collection('campaigns').doc(paymentRequestData.campaignId).update({
+            status: response === 'approved' ? 'processing_payment' : 'active'
+        });
+
+        // Crear mensaje de respuesta
+        const message = {
+            text: response === 'approved' 
+                ? '👍 El comprador ha aprobado la solicitud de pago'
+                : '❌ El comprador ha rechazado la solicitud de pago',
+            userId: currentUser.uid,
+            type: 'payment_response',
+            paymentRequestId,
+            response,
+            createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
+        };
+
+        // Guardar mensaje en la conversación
+        await window.db.collection('requests')
+            .doc(paymentRequestData.requestId)
+            .collection('messages')
+            .add(message);
+
+    } catch (error) {
+        console.error('Error al procesar respuesta de pago:', error);
+        alert('Error al procesar la respuesta: ' + error.message);
+    }
+}
+
+// Formatear estado de la campaña
+function formatStatus(status) {
+    const statusMap = {
+        'active': 'Activa',
+        'pending_payment': 'Pago pendiente',
+        'processing_payment': 'Procesando pago',
+        'completed': 'Completada',
+        'cancelled': 'Cancelada'
+    };
+    return statusMap[status] || status;
 }
 
 // Formatear fecha
