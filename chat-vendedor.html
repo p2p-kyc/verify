@@ -6,45 +6,410 @@
     <title>Chat de Vendedor - KYC P2P</title>
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
     <link rel="stylesheet" href="style.css">
+    <style>
+        /* Estilos específicos para el chat estilo WhatsApp */
+        :root {
+            --whatsapp-green: #4caf50;
+            --whatsapp-light-green: #4caf50;
+            --chat-bg: #0b141a;
+            --incoming-bg: #202c33;
+            --outgoing-bg: #4caf50;
+            --sidebar-bg: #111b21;
+            --header-bg: #202c33;
+            --text-primary: #e9edef;
+            --text-secondary: #8696a0;
+            --border-color: #222d34;
+            --input-bg: #2a3942;
+            --message-timestamp: #8696a0;
+            --message-text: #e9edef;
+            --chat-pattern: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAOxAAADsQBlSsOGwAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAABoSURBVDiNY/z//z8DNQETlKYZGBlG0zCURjMaaGhoYGBgYGD4//8/A7GYBd0LLCws/4lVyMjIyMDIyAi3kJERoQYXZiJkISMjIwOxeMgFoxYOSgupGilkp2FKMxrFabh4NIUPdC4HAJvTZFBV6XG4AAAAAElFTkSuQmCC');
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            height: 100vh;
+            background-color: var(--chat-bg);
+            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        .chat-container {
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            background-color: var(--chat-bg);
+        }
+
+        /* Sidebar de chats */
+        .chats-list {
+            width: 30%;
+            min-width: 300px;
+            max-width: 420px;
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            background-color: var(--sidebar-bg);
+        }
+
+        .no-chats {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-secondary);
+            padding: 20px;
+            text-align: center;
+        }
+
+        .no-chats i {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            color: var(--whatsapp-light-green);
+        }
+
+        .chat-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: all 0.2s;
+            background-color: var(--sidebar-bg);
+        }
+
+        .chat-item:hover {
+            background-color: #2a3942;
+        }
+
+        .chat-item.active {
+            background-color: #151616;
+        }
+
+        .chat-item-avatar {
+            width: 49px;
+            height: 49px;
+            border-radius: 50%;
+            background-color: var(--whatsapp-light-green);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .chat-item-avatar i {
+            font-size: 1.5rem;
+        }
+
+        .chat-item-content {
+            flex: 1;
+            min-width: 0;
+            padding-right: 10px;
+        }
+
+        .chat-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 4px;
+        }
+
+        .chat-item-header h4 {
+            margin: 0;
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .chat-time {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+
+        .chat-item-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .campaign-name {
+            margin: 0;
+            font-size: 0.85rem;
+            color: var(--whatsapp-green);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .last-message {
+            margin: 0;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .chat-item.completed .chat-item-avatar {
+            background-color: var(--text-secondary);
+        }
+
+        .chats-list-header {
+            padding: 16px;
+            background-color: var(--header-bg);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .chats-list-header h2 {
+            margin: 0;
+            font-size: 1rem;
+            color: var(--whatsapp-green);
+        }
+
+        #chatsList {
+            flex: 1;
+            overflow-y: auto;
+            background-color: var(--sidebar-bg);
+        }
+
+        /* Área principal del chat */
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: var(--chat-bg);
+            background-image: var(--chat-pattern);
+        }
+
+        .chat-header {
+            padding: 16px;
+            background-color: var(--header-bg);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .chat-header-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .chat-header-info .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--whatsapp-light-green);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .chat-header-text h3 {
+            margin: 0;
+            font-size: 1rem;
+        }
+
+        .chat-header-text p {
+            margin: 4px 0 0;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        #messagesContainer {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+        }
+
+        #messagesContainer::after {
+            content: '';
+            margin-top: auto;
+        }
+
+        .message {
+            max-width: 65%;
+            margin-bottom: 8px;
+            padding: 6px 10px;
+            border-radius: 7px;
+            position: relative;
+            word-wrap: break-word;
+            font-size: 0.9rem;
+        }
+
+        .message.incoming {
+            background-color: var(--incoming-bg);
+            margin-right: auto;
+            color: var(--message-text);
+        }
+
+        .message.outgoing {
+            background-color: var(--outgoing-bg);
+            margin-left: auto;
+            color: var(--message-text);
+        }
+
+        .message .timestamp {
+            font-size: 0.75rem;
+            color: var(--message-timestamp);
+            float: right;
+            opacity: 0.7;
+        }
+
+        .message-form {
+            padding: 10px 16px;
+            background-color: var(--header-bg);
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            border-left: 1px solid var(--border-color);
+        }
+
+        #messageInput {
+            flex: 1;
+            padding: 9px 12px;
+            border: none;
+            border-radius: 8px;
+            background-color: var(--input-bg);
+            font-size: 0.95rem;
+            color: var(--text-primary);
+            height: 20px;
+        }
+
+        #messageInput::placeholder {
+            color: var(--text-secondary);
+        }
+
+        #messageInput:focus {
+            outline: none;
+        }
+
+        #sendButton {
+            background: none;
+            border: none;
+            color: var(--whatsapp-green);
+            font-size: 1.5rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px;
+        }
+
+        #sendButton:hover {
+            opacity: 0.8;
+        }
+
+        #sendButton:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        #chargeButton {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background-color: var(--whatsapp-green);
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+            transition: all 0.2s;
+        }
+
+        #chargeButton:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.5);
+        }
+
+        #chargeButton::after {
+            content: 'Cobrar cuenta';
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0,0,0,0.8);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            margin-bottom: 8px;
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.2s;
+            pointer-events: none;
+        }
+
+        #chargeButton:hover::after {
+            opacity: 1;
+        }
+    </style>
 </head>
 <body>
     <div class="chat-container">
         <!-- Lista de chats -->
         <div class="chats-list">
-            <h2>Mis Chats (Vendedor)</h2>
-            <div id="chatsList"></div>
+            <div class="chats-list-header">
+                <h2>Chats de Campañas</h2>
+            </div>
+            <div id="chatsList">
+                <!-- Los chats se cargarán dinámicamente aquí -->
+            </div>
         </div>
 
-        <!-- Área de chat -->
+        <!-- Área principal del chat -->
         <div class="chat-area">
             <div class="chat-header">
-                <h3 id="chatTitle">Selecciona un chat</h3>
-                <div id="campaignInfo"></div>
+                <div class="chat-header-info">
+                    <div class="avatar">
+                        <i class='bx bx-user'></i>
+                    </div>
+                    <div class="chat-header-text">
+                        <h3 id="chatTitle">Selecciona un chat</h3>
+                        <p id="campaignInfo"></p>
+                    </div>
+                </div>
             </div>
-
-            <!-- Contenedor de mensajes -->
-            <div id="messagesContainer" class="messages-container"></div>
-
-            <!-- Formulario de mensajes -->
+            <div id="messagesContainer">
+                <!-- Los mensajes se cargarán dinámicamente aquí -->
+            </div>
             <form id="messageForm" class="message-form">
-                <input type="text" id="messageInput" placeholder="Escribe un mensaje...">
-                <button type="submit">
+                <input type="text" id="messageInput" placeholder="Escribe un mensaje..." autocomplete="off">
+                <button type="submit" id="sendButton">
                     <i class='bx bx-send'></i>
                 </button>
             </form>
-
-            <!-- Botón de cobro -->
-            <button id="chargeButton" class="action-button">
-                <i class='bx bx-dollar'></i>
-                <span>Cobrar cuenta</span>
-            </button>
         </div>
     </div>
 
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
     
     <!-- App -->
     <script src="js/config.js"></script>

@@ -7,14 +7,15 @@ let messagesListener = null;
 const messageForm = document.getElementById('messageForm');
 const messageInput = document.getElementById('messageInput');
 const messagesContainer = document.getElementById('messagesContainer');
-const chargeButton = document.getElementById('chargeButton');
+const sendButton = document.getElementById('sendButton');
 
 // Event listeners
 messageForm.addEventListener('submit', handleMessageSubmit);
-chargeButton.addEventListener('click', handleCharge);
 
-// Escuchar cambios de autenticación
-auth.onAuthStateChanged(async user => {
+// Esperar a que Firebase esté inicializado
+window.addEventListener('load', () => {
+    // Escuchar cambios de autenticación
+    window.auth.onAuthStateChanged(async user => {
     if (!user) {
         window.location.href = 'index.html';
         return;
@@ -29,6 +30,7 @@ auth.onAuthStateChanged(async user => {
     if (requestId) {
         openChat(requestId);
     }
+    });
 });
 
 // Cargar chats del vendedor
@@ -37,34 +39,62 @@ async function loadSellerChats() {
         const chatsList = document.getElementById('chatsList');
         console.log('Cargando chats del vendedor:', currentUser.uid);
 
-        // Buscar solicitudes donde el usuario es vendedor
-        const sellerRequests = await db.collection('requests')
-            .where('sellerId', '==', currentUser.uid)
+        // Buscar solicitudes hechas por el usuario
+        const requests = await window.db.collection('requests')
+            .where('userId', '==', currentUser.uid)
             .get();
 
-        if (sellerRequests.empty) {
-            chatsList.innerHTML = '<p class="no-data">No hay chats disponibles</p>';
+        let allRequests = [];
+
+        // Para cada solicitud, obtener datos de la campaña
+        for (const requestDoc of requests.docs) {
+            const requestData = requestDoc.data();
+            const campaignDoc = await window.db.collection('campaigns')
+                .doc(requestData.campaignId)
+                .get();
+
+            if (campaignDoc.exists) {
+                allRequests.push({
+                    id: requestDoc.id,
+                    requestData: requestData,
+                    campaignData: {
+                        id: campaignDoc.id,
+                        ...campaignDoc.data()
+                    }
+                });
+            }
+        }
+
+        if (allRequests.length === 0) {
+            chatsList.innerHTML = `
+                <div class="no-chats">
+                    <i class='bx bx-message-square-dots'></i>
+                    <p>No hay chats disponibles</p>
+                </div>
+            `;
             return;
         }
 
-        const chatsHtml = await Promise.all(sellerRequests.docs.map(async doc => {
-            const requestData = doc.data();
-            
-            // Obtener datos de la campaña
-            const campaignDoc = await db.collection('campaigns').doc(requestData.campaignId).get();
-            if (!campaignDoc.exists) return '';
-            
-            const campaignData = campaignDoc.data();
-            
+        const chatsHtml = await Promise.all(allRequests.map(async request => {
             // Obtener datos del comprador
-            const buyerData = await getUserData(campaignData.createdBy);
+            const buyerData = await getUserData(request.campaignData.createdBy);
+            const lastMessage = await getLastMessage(request.id);
+            const statusClass = request.campaignData.status === 'active' ? 'active' : 'completed';
             
             return `
-                <div class="chat-item" onclick="openChat('${doc.id}')">
-                    <div class="chat-info">
-                        <h3>${campaignData.name}</h3>
-                        <p class="chat-user">Chat con: ${buyerData.name || buyerData.email}</p>
-                        <p class="chat-status">${campaignData.status}</p>
+                <div class="chat-item ${statusClass}" onclick="openChat('${request.id}')" data-request-id="${request.id}">
+                    <div class="chat-item-avatar">
+                        <i class='bx bx-user'></i>
+                    </div>
+                    <div class="chat-item-content">
+                        <div class="chat-item-header">
+                            <h4>${buyerData.name || buyerData.email}</h4>
+                            <span class="chat-time">${lastMessage ? formatDate(lastMessage.createdAt) : ''}</span>
+                        </div>
+                        <div class="chat-item-info">
+                            <p class="campaign-name">${request.campaignData.name}</p>
+                            <p class="last-message">${lastMessage ? lastMessage.text : 'No hay mensajes'}</p>
+                        </div>
                     </div>
                 </div>
             `;
@@ -74,15 +104,52 @@ async function loadSellerChats() {
 
     } catch (error) {
         console.error('Error loading seller chats:', error);
-        alert('Error al cargar los chats: ' + error.message);
+        chatsList.innerHTML = `
+            <div class="no-chats">
+                <i class='bx bx-error-circle'></i>
+                <p>Error al cargar los chats</p>
+            </div>
+        `;
+    }
+}
+
+// Obtener último mensaje de un chat
+async function getLastMessage(requestId) {
+    try {
+        const messages = await window.db.collection('requests')
+            .doc(requestId)
+            .collection('messages')
+            .orderBy('createdAt', 'desc')
+            .limit(1)
+            .get();
+
+        if (!messages.empty) {
+            return messages.docs[0].data();
+        }
+        return null;
+    } catch (error) {
+        console.error('Error getting last message:', error);
+        return null;
     }
 }
 
 // Abrir chat
 async function openChat(requestId) {
     try {
+        // Desmarcar chat activo anterior
+        const previousActive = document.querySelector('.chat-item.active');
+        if (previousActive) {
+            previousActive.classList.remove('active');
+        }
+
+        // Marcar nuevo chat como activo
+        const newActive = document.querySelector(`[data-request-id="${requestId}"]`);
+        if (newActive) {
+            newActive.classList.add('active');
+        }
+
         // Obtener datos de la solicitud
-        const requestDoc = await db.collection('requests').doc(requestId).get();
+        const requestDoc = await window.db.collection('requests').doc(requestId).get();
         if (!requestDoc.exists) {
             throw new Error('Chat no encontrado');
         }
@@ -100,7 +167,7 @@ async function openChat(requestId) {
         };
 
         // Obtener datos de la campaña
-        const campaignDoc = await db.collection('campaigns').doc(requestData.campaignId).get();
+        const campaignDoc = await window.db.collection('campaigns').doc(requestData.campaignId).get();
         if (!campaignDoc.exists) {
             throw new Error('Campaña no encontrada');
         }
@@ -111,47 +178,37 @@ async function openChat(requestId) {
         const buyerData = await getUserData(campaign.createdBy);
         
         // Mostrar información del chat
-        document.getElementById('chatTitle').textContent = `Chat con ${buyerData.name || buyerData.email}`;
+        document.getElementById('chatTitle').textContent = buyerData.name || buyerData.email;
         document.getElementById('campaignInfo').innerHTML = `
-            <div class="campaign-info">
-                <h4>${campaign.name}</h4>
-                <p>${campaign.status}</p>
-            </div>
-        `;
-
-        // Verificar si hay cobro pendiente
-        const chargeQuery = await db.collection('charges')
-            .where('requestId', '==', requestId)
-            .where('status', '==', 'pending')
-            .get();
-
-        // Actualizar estado del botón de cobro
-        chargeButton.disabled = !chargeQuery.empty;
-        chargeButton.innerHTML = `
-            <i class='bx bx-dollar'></i>
-            <span>${!chargeQuery.empty ? 'Cobro pendiente' : 'Cobrar cuenta'}</span>
+            <p>${campaign.name} - ${campaign.status}</p>
         `;
 
         // Limpiar mensajes anteriores
         messagesContainer.innerHTML = '';
 
-        // Detener listener anterior si existe
-        if (messagesListener) {
-            messagesListener();
-        }
-
-        // Escuchar nuevos mensajes
-        messagesListener = db.collection('requests')
+        // Cargar mensajes existentes
+        const messages = await window.db.collection('requests')
             .doc(requestId)
             .collection('messages')
-            .orderBy('createdAt')
+            .orderBy('createdAt', 'asc')
+            .get();
+
+        messages.forEach(doc => {
+            appendMessage(doc.data());
+        });
+
+        // Escuchar nuevos mensajes
+        messagesListener = window.db.collection('requests')
+            .doc(requestId)
+            .collection('messages')
+            .orderBy('createdAt', 'asc')
             .onSnapshot(snapshot => {
                 snapshot.docChanges().forEach(change => {
                     if (change.type === 'added') {
                         appendMessage(change.doc.data());
+                        scrollToBottom();
                     }
                 });
-                scrollToBottom();
             });
 
     } catch (error) {
@@ -164,25 +221,23 @@ async function openChat(requestId) {
 async function handleMessageSubmit(event) {
     event.preventDefault();
 
-    if (!activeRequest) {
-        alert('Por favor selecciona un chat primero');
-        return;
-    }
-
     const text = messageInput.value.trim();
-    if (!text) return;
+    if (!text || !activeRequest) return;
 
     try {
-        await db.collection('requests')
+        const message = {
+            text,
+            userId: currentUser.uid,
+            createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
+        };
+
+        await window.db.collection('requests')
             .doc(activeRequest.id)
             .collection('messages')
-            .add({
-                text,
-                userId: currentUser.uid,
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            });
+            .add(message);
 
         messageInput.value = '';
+        messageInput.focus();
 
     } catch (error) {
         console.error('Error sending message:', error);
@@ -225,19 +280,39 @@ function appendMessage(message) {
     const messageDiv = document.createElement('div');
     messageDiv.classList.add('message');
     messageDiv.classList.add(message.userId === currentUser.uid ? 'outgoing' : 'incoming');
+    messageDiv.dataset.timestamp = message.createdAt?.seconds || Date.now() / 1000;
     
     messageDiv.innerHTML = `
         <div class="message-content">${message.text}</div>
         <div class="timestamp">${formatDate(message.createdAt)}</div>
     `;
 
-    messagesContainer.appendChild(messageDiv);
+    // Encontrar la posición correcta para insertar el mensaje
+    const messages = Array.from(messagesContainer.children);
+    const position = messages.findIndex(existing => {
+        const existingTime = parseFloat(existing.dataset.timestamp);
+        const newTime = parseFloat(messageDiv.dataset.timestamp);
+        return newTime < existingTime;
+    });
+
+    if (position === -1) {
+        // Si no se encuentra una posición, agregar al final
+        messagesContainer.appendChild(messageDiv);
+    } else {
+        // Insertar en la posición correcta
+        messagesContainer.insertBefore(messageDiv, messages[position]);
+    }
+
+    // Scroll al último mensaje si es un mensaje nuevo
+    if (!message.createdAt || message.createdAt?.seconds >= Date.now() / 1000 - 1) {
+        scrollToBottom();
+    }
 }
 
 // Obtener datos de usuario
 async function getUserData(userId) {
     try {
-        const userDoc = await db.collection('users').doc(userId).get();
+        const userDoc = await window.db.collection('users').doc(userId).get();
         return userDoc.exists ? userDoc.data() : { email: 'Usuario desconocido' };
     } catch (error) {
         console.error('Error getting user data:', error);
@@ -248,12 +323,29 @@ async function getUserData(userId) {
 // Formatear fecha
 function formatDate(timestamp) {
     if (!timestamp) return '';
-    const date = timestamp.toDate();
-    return date.toLocaleString('es-ES', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true
-    });
+    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    const now = new Date();
+    const diff = now - date;
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+    if (days === 0) {
+        return new Intl.DateTimeFormat('es', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+        }).format(date);
+    } else if (days === 1) {
+        return 'Ayer';
+    } else if (days < 7) {
+        return new Intl.DateTimeFormat('es', {
+            weekday: 'long'
+        }).format(date);
+    } else {
+        return new Intl.DateTimeFormat('es', {
+            day: '2-digit',
+            month: 'short'
+        }).format(date);
+    }
 }
 
 // Scroll al último mensaje
