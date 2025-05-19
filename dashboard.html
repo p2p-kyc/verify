@@ -7,33 +7,78 @@
     <link rel="stylesheet" href="style.css">
     <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
 </head>
-<body>
-    <div class="background-shapes">
-        <div class="shape"></div>
-        <div class="shape"></div>
-    </div>
-    <div class="container">
-        <header class="dashboard-header">
-            <div class="header-left">
-                <i class='bx bx-shield-quarter bx-tada' style='color: var(--terminal-green); font-size: 32px;'></i>
-                <h1>Dashboard</h1>
+<body class="dark-theme">
+    <!-- Navbar fijo superior -->
+    <nav class="navbar">
+        <div class="navbar-left">
+            <i class='bx bx-shield-quarter' style='color: var(--primary-color);'></i>
+            <div class="search-box">
+                <i class='bx bx-search'></i>
+                <input type="text" placeholder="Search campaigns..." id="searchCampaigns">
             </div>
-            <button id="logoutBtn" class="logout-btn">
-                <i class='bx bx-log-out'></i>
-                <span>Logout</span>
-            </button>
-        </header>
-
-        <div class="create-campaign-section">
-            <div class="section-header">
-                <i class='bx bx-plus-circle'></i>
-                <h2>Campaigns</h2>
-            </div>
+        </div>
+        <div class="navbar-center">
+            <a href="#" class="nav-link active">
+                <i class='bx bx-home'></i>
+            </a>
+            <a href="#" class="nav-link">
+                <i class='bx bx-bell'></i>
+            </a>
+            <a href="#" class="nav-link">
+                <i class='bx bx-message-square-dots'></i>
+            </a>
+        </div>
+        <div class="navbar-right">
             <button id="createCampaignBtn" class="create-btn">
                 <i class='bx bx-plus'></i>
-                <span>Create New Campaign</span>
             </button>
+            <div class="user-menu">
+                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="Profile" class="avatar">
+                <button id="logoutBtn" class="logout-btn">
+                    <i class='bx bx-log-out'></i>
+                </button>
+            </div>
         </div>
+    </nav>
+
+    <!-- Layout principal -->
+    <div class="main-layout">
+
+        <!-- Sidebar izquierdo -->
+        <aside class="sidebar">
+            <div class="sidebar-section">
+                <a href="#" class="sidebar-link active">
+                    <i class='bx bx-grid-alt'></i>
+                    <span>All Campaigns</span>
+                </a>
+                <a href="#" class="sidebar-link">
+                    <i class='bx bx-time'></i>
+                    <span>Pending</span>
+                </a>
+                <a href="#" class="sidebar-link">
+                    <i class='bx bx-check-circle'></i>
+                    <span>Active</span>
+                </a>
+                <a href="#" class="sidebar-link">
+                    <i class='bx bx-x-circle'></i>
+                    <span>Cancelled</span>
+                </a>
+            </div>
+            <div class="sidebar-section">
+                <h3>My Activity</h3>
+                <a href="#" class="sidebar-link">
+                    <i class='bx bx-purchase-tag'></i>
+                    <span>My Campaigns</span>
+                </a>
+                <a href="#" class="sidebar-link">
+                    <i class='bx bx-wallet'></i>
+                    <span>My Payments</span>
+                </a>
+            </div>
+        </aside>
+
+        <!-- Feed principal -->
+        <main class="main-feed">
 
         <!-- Modal para crear campaña -->
         <div id="createCampaignModal" class="modal">
@@ -110,16 +155,41 @@
             </div>
         </div>
 
-        <!-- Available Campaigns Section -->
-        <section class="campaigns-section">
-            <div class="section-header">
-                <i class='bx bx-list-ul'></i>
-                <h2>Available Campaigns</h2>
+            <!-- Create Campaign Card -->
+            <div class="create-post-card">
+                <div class="post-header">
+                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="Profile" class="avatar">
+                    <button class="create-post-btn" onclick="openCreateCampaignModal()">
+                        <span>Create a new campaign...</span>
+                    </button>
+                </div>
+                <div class="post-actions">
+                    <button onclick="openCreateCampaignModal()">
+                        <i class='bx bx-plus-circle'></i>
+                        <span>Campaign</span>
+                    </button>
+                    <button>
+                        <i class='bx bx-image'></i>
+                        <span>Photo</span>
+                    </button>
+                    <button>
+                        <i class='bx bx-dollar-circle'></i>
+                        <span>Price</span>
+                    </button>
+                </div>
             </div>
-            <div id="availableCampaigns" class="campaigns-container">
+
+            <!-- Campaigns Feed -->
+            <div class="feed-filters">
+                <button class="filter-btn active">All</button>
+                <button class="filter-btn">Active</button>
+                <button class="filter-btn">Pending</button>
+                <button class="filter-btn">Completed</button>
+            </div>
+
+            <div id="availableCampaigns" class="campaigns-feed">
                 <!-- Campaigns will be loaded here -->
             </div>
-        </section>
 
         <!-- Scripts -->
         <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
@@ -130,6 +200,53 @@
         <script src="js/config.js"></script>
         <script src="js/auth.js"></script>
         <script src="js/dashboard.js"></script>
+        </main>
+
+        <!-- Sidebar derecho -->
+        <aside class="sidebar right-sidebar">
+            <div class="sidebar-section">
+                <h3>Campaign Stats</h3>
+                <div class="stats-card">
+                    <div class="stat-item">
+                        <i class='bx bx-trending-up'></i>
+                        <div class="stat-info">
+                            <span class="stat-label">Active</span>
+                            <span class="stat-value" id="activeCount">0</span>
+                        </div>
+                    </div>
+                    <div class="stat-item">
+                        <i class='bx bx-time'></i>
+                        <div class="stat-info">
+                            <span class="stat-label">Pending</span>
+                            <span class="stat-value" id="pendingCount">0</span>
+                        </div>
+                    </div>
+                    <div class="stat-item">
+                        <i class='bx bx-check-double'></i>
+                        <div class="stat-info">
+                            <span class="stat-label">Completed</span>
+                            <span class="stat-value" id="completedCount">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="sidebar-section">
+                <h3>Recent Activity</h3>
+                <div class="activity-feed" id="recentActivity">
+                    <!-- Activity items will be loaded here -->
+                </div>
+            </div>
+        </aside>
     </div>
+
+    <!-- Scripts -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script src="https://upload-widget.cloudinary.com/global/all.js"></script>
+    
+    <script src="js/config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/dashboard.js"></script>
 </body>
 </html>

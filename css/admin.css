@@ -316,12 +316,75 @@
 
 /* Data Tables */
 .table-container {
-    background-color: white;
+    background-color: rgb(15, 13, 13);
     border-radius: 10px;
     padding: 20px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     margin-bottom: 20px;
     overflow-x: auto;
+}
+
+/* Creator Info */
+.creator-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.creator-name {
+    font-weight: 500;
+    color: var(--dark-text);
+}
+
+.creator-email {
+    font-size: 0.8rem;
+    color: var(--dark-text-secondary);
+}
+
+/* DataTables Export Buttons */
+.dt-buttons {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 1rem;
+}
+
+.dt-button {
+    background: var(--dark-surface) !important;
+    border: 1px solid var(--dark-border) !important;
+    border-radius: 4px !important;
+    color: var(--dark-text) !important;
+    padding: 8px 16px !important;
+    font-size: 0.9rem !important;
+    transition: all 0.2s !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+}
+
+.dt-button:hover {
+    background: var(--dark-surface-light) !important;
+    transform: translateY(-1px);
+}
+
+.dt-button:before {
+    font-family: 'boxicons' !important;
+    font-size: 1.1rem;
+}
+
+.buttons-copy:before {
+    content: '\eb93';
+}
+
+.buttons-csv:before {
+    content: '\e945';
+}
+
+.buttons-excel:before {
+    content: '\eb8c';
+}
+
+.buttons-pdf:before {
+    content: '\eb88';
 }
 
 .data-table {
@@ -345,6 +408,74 @@
 
 .data-table tbody tr:hover {
     background-color: var(--dark-surface-light);
+}
+
+/* Table styles */
+.table-container {
+    background: var(--surface-color);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-top: 1rem;
+    box-shadow: var(--shadow-sm);
+    overflow-x: auto;
+}
+
+/* DataTables customization */
+.dataTables_wrapper {
+    padding: 1rem 0;
+}
+
+.dataTables_filter input,
+.dataTables_length select {
+    background: var(--input-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 0.5rem;
+    color: var(--text-color);
+}
+
+.dataTables_filter input:focus,
+.dataTables_length select:focus {
+    border-color: var(--primary-color);
+    outline: none;
+}
+
+.dt-buttons {
+    margin-bottom: 1rem;
+}
+
+.dt-button {
+    background: var(--surface-color) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 4px !important;
+    color: var(--text-color) !important;
+    padding: 0.5rem 1rem !important;
+    margin-right: 0.5rem !important;
+}
+
+.dt-button:hover {
+    background: var(--hover-color) !important;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button {
+    background: var(--surface-color) !important;
+    border: 1px solid var(--border-color) !important;
+    color: var(--text-color) !important;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+    background: var(--hover-color) !important;
+    border: 1px solid var(--border-color) !important;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button.current {
+    background: var(--primary-color) !important;
+    color: white !important;
+    border: 1px solid var(--primary-color) !important;
+}
+
+.dataTables_wrapper .dataTables_info {
+    color: var(--text-color) !important;
 }
 
 /* Status Badges */
@@ -523,4 +654,46 @@
         width: 100%;
         overflow-x: auto;
     }
+}
+
+/* Modal styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.8);
+}
+
+.modal-content {
+    position: relative;
+    margin: auto;
+    padding: 0;
+    width: 90%;
+    max-width: 800px;
+    margin-top: 50px;
+}
+
+.modal img {
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+}
+
+.close {
+    position: absolute;
+    right: 10px;
+    top: -30px;
+    color: #fff;
+    font-size: 30px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close:hover {
+    color: #ccc;
 }
