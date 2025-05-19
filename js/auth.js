@@ -81,7 +81,7 @@ if (typeof window.currentUser === 'undefined') {
 }
 
 // Escuchar cambios en el estado de autenticación
-auth.onAuthStateChanged(async (user) => {
+window.auth.onAuthStateChanged(async (user) => {
     if (user) {
         // Usuario autenticado
         window.currentUser = user;

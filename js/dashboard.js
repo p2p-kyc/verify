@@ -96,11 +96,11 @@ async function handleCreateCampaign(event) {
         
         if (isEditMode) {
             // Update existing campaign
-            await db.collection('campaigns').doc(campaignId).update(campaignData);
+            await window.db.collection('campaigns').doc(campaignId).update(campaignData);
             showToast('Campaign updated successfully');
         } else {
             // Create new campaign
-            await db.collection('campaigns').add(campaignData);
+            await window.db.collection('campaigns').add(campaignData);
             showToast('Campaign created successfully! Please wait for admin approval.');
         }
         
@@ -1018,8 +1018,7 @@ function showToast(message, type = 'success') {
     });
 }
 
-// Get Firebase instance
-const db = firebase.firestore();
+// Get Firebase instance from window
 let unsubscribeConnection = null;
 
 // Initialize the dashboard
@@ -1028,33 +1027,86 @@ async function initializeDashboard() {
         // Initialize event listeners
         initializeEventListeners();
 
-        // Check if user is logged in
-        firebase.auth().onAuthStateChanged((user) => {
-            window.currentUser = user;
-            if (user) {
-                loadCampaigns();
-
-                // Listen for connection changes if not already listening
-                if (!unsubscribeConnection) {
-                    unsubscribeConnection = db.collection('campaigns').onSnapshot(() => {
-                        // Connection established
-                    }, (error) => {
-                        if (error.code === 'unavailable') {
-                            showOfflineMessage();
-                        }
-                    });
+        // Listen for Firestore connection changes
+        window.addEventListener('firestoreConnectionChange', (event) => {
+            if (event.detail.isConnected) {
+                // Remove offline message if it exists
+                const existingMessage = document.querySelector('.offline-message');
+                if (existingMessage) {
+                    existingMessage.remove();
                 }
             } else {
-                // Clean up connection listener
-                if (unsubscribeConnection) {
-                    unsubscribeConnection();
-                    unsubscribeConnection = null;
+                showOfflineMessage();
+            }
+        });
+
+        // Check if user is logged in
+        const unsubscribeAuth = firebase.auth().onAuthStateChanged(async (user) => {
+            window.currentUser = user;
+            if (user) {
+                // Set up campaigns listener with error handling and retry
+                const setupCampaignsListener = async (retryCount = 0) => {
+                    try {
+                        if (window.unsubscribeCampaigns) {
+                            window.unsubscribeCampaigns();
+                        }
+
+                        // Get initial data from cache first
+                        const cachedData = await window.db.collection('campaigns')
+                            .get({ source: 'cache' })
+                            .catch(() => null);
+
+                        if (cachedData) {
+                            updateCampaignsFeed(cachedData);
+                        }
+
+                        // Set up real-time listener
+                        window.unsubscribeCampaigns = window.db.collection('campaigns')
+                            .onSnapshot(
+                                { includeMetadataChanges: true },
+                                (snapshot) => {
+                                    if (!snapshot.metadata.fromCache) {
+                                        updateCampaignsFeed(snapshot);
+                                    }
+                                },
+                                async (error) => {
+                                    console.error('Error in campaigns listener:', error);
+                                    if (error.code === 'unavailable' && retryCount < 3) {
+                                        showOfflineMessage();
+                                        // Exponential backoff for retries
+                                        const delay = Math.min(1000 * Math.pow(2, retryCount), 10000);
+                                        await new Promise(resolve => setTimeout(resolve, delay));
+                                        setupCampaignsListener(retryCount + 1);
+                                    }
+                                }
+                            );
+                    } catch (error) {
+                        console.error('Error setting up campaigns listener:', error);
+                        showOfflineMessage();
+                    }
+                };
+
+                await setupCampaignsListener();
+            } else {
+                // Clean up listeners
+                if (window.unsubscribeCampaigns) {
+                    window.unsubscribeCampaigns();
+                    window.unsubscribeCampaigns = null;
                 }
                 window.location.href = 'login.html';
             }
         });
+
+        // Clean up listeners on unmount
+        window.addEventListener('beforeunload', () => {
+            unsubscribeAuth();
+            if (window.unsubscribeCampaigns) {
+                window.unsubscribeCampaigns();
+            }
+        });
     } catch (error) {
         console.error('Error initializing dashboard:', error);
+        showOfflineMessage();
     }
 }
 
