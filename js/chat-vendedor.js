@@ -392,11 +392,6 @@ async function requestPayment() {
             return;
         }
 
-        // Deshabilitar visualmente el botón mientras se procesa
-        const button = headerActions.querySelector('button');
-        button.style.opacity = '0.7';
-        button.style.cursor = 'wait';
-
         // Verificar estado de la campaña
         const campaignDoc = await window.db.collection('campaigns')
             .doc(activeRequest.campaign.id)
@@ -407,74 +402,147 @@ async function requestPayment() {
         }
 
         const campaignData = campaignDoc.data();
-        console.log('Estado actual de la campaña:', campaignData);
+        console.log('Estado actual de la campaña:', {
+            id: campaignDoc.id,
+            status: campaignData.status,
+            paymentStatus: campaignData.paymentStatus
+        });
 
-        // Verificar si la campaña tiene pago aprobado
-        console.log('Estado de pago de la campaña:', campaignData.paymentStatus);
-        
         // Verificar el estado de pago
         if (campaignData.paymentStatus !== 'approved') {
+            console.error('Error de estado de pago:', campaignData.paymentStatus);
             throw new Error('El pago de la campaña no está aprobado');
         }
 
-        console.log('Pago de la campaña aprobado');
-
-        // Verificar estado de la campaña
-        console.log('Estado de la campaña:', campaignData.status);
-
         // Verificar estado de la campaña
         if (campaignData.status !== 'active' && campaignData.status !== 'approved') {
+            console.error('Error de estado de campaña:', campaignData.status);
             throw new Error('La campaña no está activa o aprobada');
         }
 
-        // Crear solicitud de pago
-        const paymentRequest = {
-            sellerId: currentUser.uid,
-            buyerId: campaignData.createdBy,
-            campaignId: activeRequest.campaign.id,
-            requestId: activeRequest.id,
-            amount: campaignData.totalPrice,
-            currency: 'USDT',
-            status: 'pending',
-            createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
-        };
+        // Mostrar el modal de cobro
+        const modal = document.getElementById('chargeModal');
+        const confirmBtn = document.getElementById('confirmCharge');
+        const cancelBtn = document.getElementById('cancelCharge');
+        const closeBtn = modal.querySelector('.close');
 
-        // Guardar solicitud de pago
-        const paymentRequestRef = await window.db.collection('payment_requests').add(paymentRequest);
+        // Esperar la confirmación del usuario usando Promise
+        const paymentRequest = await new Promise((resolve, reject) => {
+            // Mostrar el modal y configurar datos
+            openChargeModal(campaignData);
+
+            // Manejar confirmación
+            confirmBtn.onclick = async () => {
+                const accountsToCharge = parseInt(document.getElementById('accountsToCharge').value);
+                const availableAccounts = campaignData.accountCount - (campaignData.verificationCount || 0);
+
+                if (accountsToCharge < 1 || accountsToCharge > availableAccounts) {
+                    document.getElementById('accountValidation').textContent = 'Cantidad de cuentas inválida';
+                    return;
+                }
+
+                // Calcular el monto
+                const amountPerAccount = campaignData.pricePerAccount;
+                const totalAmount = amountPerAccount * accountsToCharge;
+
+                // Crear solicitud de pago
+                const request = {
+                    sellerId: currentUser.uid,
+                    buyerId: campaignData.createdBy,
+                    campaignId: activeRequest.campaign.id,
+                    requestId: activeRequest.id,
+                    amount: totalAmount,
+                    accountsRequested: accountsToCharge,
+                    pricePerAccount: amountPerAccount,
+                    currency: 'USDT',
+                    status: 'pending',
+                    createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
+                };
+
+                closeChargeModal();
+                resolve(request);
+            };
+
+            // Manejar cancelación
+            const handleCancel = () => {
+                closeChargeModal();
+                reject(new Error('Operación cancelada'));
+            };
+
+            cancelBtn.onclick = handleCancel;
+            closeBtn.onclick = handleCancel;
+            window.onclick = (event) => {
+                if (event.target === modal) handleCancel();
+            };
+        });
+
+        // Actualizar estado del botón
+        const button = headerActions.querySelector('button');
+        if (button) {
+            button.textContent = 'Procesando...';
+            button.disabled = true;
+            button.style.opacity = '0.7';
+            button.style.cursor = 'wait';
+        }
+
+        // Iniciar transacción de Firestore
+        const batch = window.db.batch();
+
+        // Crear referencia para la solicitud de pago
+        const paymentRequestRef = window.db.collection('payment_requests').doc();
+        batch.set(paymentRequestRef, paymentRequest);
 
         // Crear mensaje de cobro
         const message = {
-            text: `💰 El vendedor ha solicitado el pago de $${campaignData.totalPrice} USDT`,
+            text: `💰 El vendedor ha solicitado el pago de $${paymentRequest.amount} ${paymentRequest.currency} por ${paymentRequest.accountsRequested} cuenta${paymentRequest.accountsRequested > 1 ? 's' : ''} ($${paymentRequest.pricePerAccount} ${paymentRequest.currency} c/u)`,
             userId: currentUser.uid,
             type: 'charge',
-            amount: campaignData.totalPrice,
-            currency: 'USDT',
+            amount: paymentRequest.amount,
+            currency: paymentRequest.currency,
             paymentRequestId: paymentRequestRef.id,
             createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
         };
 
-        // Guardar mensaje
-        await window.db.collection('requests')
+        // Agregar mensaje al batch
+        const messageRef = window.db.collection('requests')
             .doc(activeRequest.id)
             .collection('messages')
-            .add(message);
+            .doc();
+        batch.set(messageRef, message);
 
-        // Actualizar estado de la campaña
-        await window.db.collection('campaigns')
-            .doc(activeRequest.campaign.id)
-            .update({
-                status: 'pending_payment',
-                chargeRequestedAt: window.firebase.firestore.FieldValue.serverTimestamp(),
-                currentPaymentRequest: paymentRequestRef.id
-            });
+        // Actualizar estado de la campaña en el batch
+        const campaignRef = window.db.collection('campaigns')
+            .doc(activeRequest.campaign.id);
+        batch.update(campaignRef, {
+            status: 'pending_payment',
+            chargeRequestedAt: window.firebase.firestore.FieldValue.serverTimestamp(),
+            currentPaymentRequest: paymentRequestRef.id
+        });
+
+        // Ejecutar todas las operaciones en una transacción
+        await batch.commit();
+
+        // Restaurar estado del botón
+        if (button) {
+            button.textContent = 'Cobrar cuenta';
+            button.disabled = false;
+            button.style.opacity = '1';
+            button.style.cursor = 'pointer';
+        }
 
     } catch (error) {
         console.error('Error al procesar el pago:', error);
-        alert('Error al procesar el pago: ' + error.message);
         
-        // Re-habilitar visualmente el botón en caso de error
+        // No mostrar alerta si fue cancelación voluntaria
+        if (error.message !== 'Operación cancelada') {
+            alert('Error al procesar el pago: ' + error.message);
+        }
+        
+        // Restaurar estado del botón
         const button = headerActions.querySelector('button');
         if (button) {
+            button.textContent = 'Cobrar cuenta';
+            button.disabled = false;
             button.style.opacity = '1';
             button.style.cursor = 'pointer';
         }
@@ -570,6 +638,47 @@ function formatDate(timestamp) {
             month: 'short'
         }).format(date);
     }
+}
+
+// Abrir modal de cobro
+function openChargeModal(campaignData) {
+    const modal = document.getElementById('chargeModal');
+    const accountsInput = document.getElementById('accountsToCharge');
+    const availableAccounts = campaignData.accountCount - (campaignData.verificationCount || 0);
+    
+    // Actualizar información en el modal
+    document.getElementById('availableAccounts').textContent = availableAccounts;
+    document.getElementById('pricePerAccount').textContent = `$${campaignData.pricePerAccount}`;
+    document.getElementById('accountValidation').textContent = '';
+    document.getElementById('totalAmount').textContent = '0';
+    
+    // Resetear y configurar el input
+    accountsInput.value = '';
+    accountsInput.max = availableAccounts;
+    accountsInput.min = 1;
+    
+    // Agregar evento para actualizar el monto total
+    accountsInput.oninput = () => {
+        const accounts = parseInt(accountsInput.value) || 0;
+        const total = accounts * campaignData.pricePerAccount;
+        document.getElementById('totalAmount').textContent = `$${total}`;
+        
+        // Validar el número de cuentas
+        if (accounts < 1 || accounts > availableAccounts) {
+            document.getElementById('accountValidation').textContent = 'Cantidad de cuentas inválida';
+        } else {
+            document.getElementById('accountValidation').textContent = '';
+        }
+    };
+    
+    // Mostrar el modal
+    modal.style.display = 'block';
+}
+
+// Cerrar modal de cobro
+function closeChargeModal() {
+    const modal = document.getElementById('chargeModal');
+    modal.style.display = 'none';
 }
 
 // Scroll al último mensaje
