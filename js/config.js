@@ -1,5 +1,6 @@
 // Your web app's Firebase configuration
-const firebaseConfig = {
+if (!window.firebaseConfig) {
+    window.firebaseConfig = {
     apiKey: "AIzaSyBSvOtPS-YnE_rmBgVGISTrC3qg5PXh3X4",
     authDomain: "kyc-p2p.firebaseapp.com",
     projectId: "kyc-p2p",
@@ -70,3 +71,4 @@ auth.onAuthStateChanged((user) => {
         }
     }
 });
+}

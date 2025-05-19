@@ -73,7 +73,9 @@ async function isAdmin(uid) {
 }
 
 // Variable global para almacenar el rol del usuario
-let userRole = null;
+if (typeof window.userRole === 'undefined') {
+    window.userRole = null;
+}
 
 // Escuchar cambios en el estado de autenticación
 auth.onAuthStateChanged(async (user) => {

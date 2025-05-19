@@ -278,9 +278,6 @@ async function loadCampaigns() {
 
         // Update campaigns feed
         updateCampaignsFeed(snapshot);
-
-        // Load recent activity
-        loadRecentActivity();
     } catch (error) {
         console.error('Error loading campaigns:', error);
         const campaignsContainer = document.getElementById('availableCampaigns');
@@ -438,173 +435,152 @@ async function saveCampaign(id) {
     }
 }
 
+// Check if user is owner of campaign
+function isOwner(campaign) {
+    return window.currentUser && campaign.createdBy === window.currentUser.uid;
+}
+
 // Update campaigns feed
-function updateCampaignsFeed(snapshot) {
-    const campaignsContainer = document.getElementById('availableCampaigns');
-    campaignsContainer.innerHTML = '';
+async function updateCampaignsFeed(snapshot) {
+    const campaignsFeed = document.getElementById('availableCampaigns');
+    campaignsFeed.innerHTML = '';
 
     if (snapshot.empty) {
-        campaignsContainer.innerHTML = `
+        campaignsFeed.innerHTML = `
             <div class="empty-state">
                 <i class='bx bx-search'></i>
                 <p>No campaigns found</p>
-                <button onclick="openCreateCampaignModal()" class="create-btn">
-                    <i class='bx bx-plus'></i>
-                    <span>Create Campaign</span>
-                </button>
             </div>
         `;
         return;
     }
 
-    snapshot.forEach(doc => {
-        const campaign = doc.data();
-        const campaignCard = createCampaignCard(doc.id, campaign);
-        campaignsContainer.appendChild(campaignCard);
+    // Sort campaigns by createdAt in descending order
+    const campaigns = [];
+    snapshot.forEach(doc => campaigns.push({ id: doc.id, ...doc.data() }));
+    campaigns.sort((a, b) => {
+        const dateA = a.createdAt?.toMillis() || 0;
+        const dateB = b.createdAt?.toMillis() || 0;
+        return dateB - dateA;
+    });
+
+    campaigns.forEach(campaign => {
+        const card = createCampaignCard(campaign.id, campaign);
+        if (card) {
+            campaignsFeed.appendChild(card);
+        }
     });
 }
 
-// Create campaign card
-async function createCampaignCard(id, campaign) {
-    const div = document.createElement('div');
-    div.className = 'campaign-card';
-    div.dataset.campaignId = id;
-    
+function createCampaignCard(id, campaign) {
+    if (!id || !campaign) {
+        console.error('Invalid campaign data');
+        return null;
+    }
+
     try {
-        // Check if campaign is saved
-        let isSaved = false;
-        const userDoc = await db.collection('users').doc(currentUser.uid).get();
-        if (userDoc.exists) {
-            const savedCampaigns = userDoc.data().savedCampaigns || [];
-            isSaved = savedCampaigns.includes(id);
-        }
+        const card = document.createElement('div');
+        card.className = 'campaign-card';
 
-        // Check if user is owner
-        const isOwner = campaign.createdBy === currentUser.uid;
+        // Sanitize data to prevent XSS
+        const sanitize = (str) => {
+            if (!str && str !== 0) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        };
 
-        const progress = Math.min((campaign.verificationCount / campaign.accountCount) * 100, 100);
-        const statusClass = campaign.status.toLowerCase();
-        const creatorName = campaign.creatorName || 'Unknown';
-        const timestamp = formatDate(campaign.createdAt);
+        // Check campaign ownership
+        const ownerStatus = window.currentUser && campaign.createdBy === window.currentUser.uid;
+        const isActive = campaign.status === 'active';
+        const isSaved = campaign.saved || false;
 
-        div.innerHTML = `
+        // Build card HTML
+        card.innerHTML = `
             <div class="campaign-header">
                 <div class="campaign-title">
-                    <h3>${campaign.name}</h3>
-                    <span class="status ${campaign.status}">${campaign.status}</span>
+                    <h3>${sanitize(campaign.name)}</h3>
+                    <span class="status ${sanitize(campaign.status)}">${sanitize(campaign.status)}</span>
                 </div>
-                <div class="campaign-menu">
-                    <button class="menu-btn" onclick="toggleCampaignMenu('${id}')">
-                        <i class='bx bx-dots-vertical-rounded'></i>
-                    </button>
-                    <div class="menu-dropdown" id="menu-${id}">
-                        <button onclick="viewCampaign('${id}')">
-                            <i class='bx bx-show'></i>
-                            <span>View Details</span>
+                ${ownerStatus ? `
+                    <div class="campaign-menu">
+                        <button class="menu-btn" onclick="toggleCampaignMenu('${sanitize(id)}')">
+                            <i class='bx bx-dots-vertical-rounded'></i>
                         </button>
-                        ${isOwner ? `
-                            <button onclick="editCampaign('${id}')">
+                        <div class="menu-dropdown" id="menu-${sanitize(id)}">
+                            <button onclick="editCampaign('${sanitize(id)}')">
                                 <i class='bx bx-edit'></i>
                                 <span>Edit</span>
                             </button>
-                            <button onclick="deleteCampaign('${id}')">
+                            <button onclick="deleteCampaign('${sanitize(id)}')">
                                 <i class='bx bx-trash'></i>
                                 <span>Delete</span>
                             </button>
-                        ` : campaign.status === 'active' ? `
-                            <button onclick="joinCampaign('${id}')">
-                                <i class='bx bx-right-arrow-alt'></i>
-                                <span>Join</span>
-                            </button>
-                        ` : ''}
+                        </div>
                     </div>
-                </div>
+                ` : ''}
             </div>
             <div class="campaign-body">
-                <p class="description">${campaign.description}</p>
+                <p class="description">${sanitize(campaign.description)}</p>
                 <div class="campaign-stats">
                     <div class="stat">
+                        <i class='bx bx-map'></i>
+                        <span>${sanitize(campaign.countries?.join(', ') || 'All Countries')}</span>
+                    </div>
+                    <div class="stat">
                         <i class='bx bx-user'></i>
-                        <span>${campaign.verificationCount}/${campaign.accountCount} accounts</span>
+                        <span>${sanitize(campaign.accountCount)} accounts</span>
                     </div>
                     <div class="stat">
                         <i class='bx bx-dollar'></i>
-                        <span>${campaign.pricePerAccount} USDT per account</span>
+                        <span>${sanitize(campaign.pricePerAccount)} USDT/account</span>
                     </div>
                     <div class="stat">
-                        <i class='bx bx-money'></i>
-                        <span>${campaign.totalPrice} USDT total</span>
-                    </div>
-                    <div class="stat">
-                        <i class='bx bx-globe'></i>
-                        <span>${campaign.countries.join(', ')}</span>
+                        <i class='bx bx-check-circle'></i>
+                        <span>${sanitize(campaign.verificationCount || 0)}/${sanitize(campaign.accountCount)} verified</span>
                     </div>
                 </div>
             </div>
             <div class="campaign-footer">
                 <div class="campaign-meta">
                     <div class="creator">
-                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${campaign.creatorName}" alt="${campaign.creatorName}" class="avatar">
-                        <span>${campaign.creatorName}</span>
+                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${sanitize(campaign.createdBy)}" alt="Creator" class="avatar">
+                        <span>${sanitize(campaign.creatorName || 'Unknown')}</span>
                     </div>
                     <span class="date">${formatDate(campaign.createdAt)}</span>
                 </div>
                 <div class="campaign-actions">
-                    <button class="share-btn" onclick="shareCampaign('${id}')">
+                    <button class="share-btn" onclick="shareCampaign('${sanitize(id)}')">
                         <i class='bx bx-share'></i>
                         <span>Share</span>
                     </button>
-                    ${!isOwner ? `
-                        <button class="save-btn ${isSaved ? 'saved' : ''}" onclick="saveCampaign('${id}')">
-                            <i class='bx ${isSaved ? 'bx-bookmark-heart' : 'bx-bookmark'}'></i>
-                            <span>${isSaved ? 'Saved' : 'Save'}</span>
+                    <button class="save-btn ${isSaved ? 'saved' : ''}" onclick="saveCampaign('${sanitize(id)}')">
+                        <i class='bx ${isSaved ? 'bx-bookmark-heart' : 'bx-bookmark'}'></i>
+                        <span>${isSaved ? 'Saved' : 'Save'}</span>
+                    </button>
+                    ${!ownerStatus && isActive ? `
+                        <button class="join-btn" onclick="joinCampaign('${sanitize(id)}')">
+                            <i class='bx bx-right-arrow-alt'></i>
+                            <span>Join</span>
                         </button>
                     ` : ''}
+                    <button class="view-btn" onclick="viewCampaign('${sanitize(id)}')">
+                        <i class='bx bx-show'></i>
+                        <span>View</span>
+                    </button>
                 </div>
             </div>
         `;
-        
-        // Add hover effect for campaign card
-        div.addEventListener('mouseenter', () => {
-            div.classList.add('hover');
-        });
-        
-        div.addEventListener('mouseleave', () => {
-            div.classList.remove('hover');
-            // Hide menu when leaving card
-            const menu = document.getElementById(`menu-${id}`);
-            if (menu) menu.style.display = 'none';
-        });
+
+        return card;
     } catch (error) {
         console.error('Error creating campaign card:', error);
-        showToast('Error creating campaign card', 'error');
+        return null;
     }
-    
-    // Add hover effect for campaign menu
-    if (isOwner) {
-        const menuBtn = div.querySelector('.menu-btn');
-        const menuContent = div.querySelector('.menu-content');
-
-        menuBtn.addEventListener('mouseenter', () => {
-            menuContent.style.display = 'block';
-        });
-
-        menuBtn.addEventListener('mouseleave', () => {
-            setTimeout(() => {
-                if (!menuContent.matches(':hover')) {
-                    menuContent.style.display = 'none';
-                }
-            }, 200);
-        });
-
-        menuContent.addEventListener('mouseleave', () => {
-            menuContent.style.display = 'none';
-        });
-    }
-    
-    return div;
 }
-
 // Toggle campaign menu
 function toggleCampaignMenu(id) {
     const menu = document.getElementById(`menu-${id}`);
