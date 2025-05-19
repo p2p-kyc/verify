@@ -475,18 +475,117 @@ function formatDate(date) {
     }).format(date);
 }
 
+// Cargar solicitudes de pago
+async function loadPaymentRequests() {
+    try {
+        const paymentRequestsList = document.getElementById('paymentRequestsList');
+        paymentRequestsList.innerHTML = ''; // Limpiar lista existente
+
+        // Obtener todas las solicitudes de pago
+        const snapshot = await db.collection('payment_requests')
+            .orderBy('createdAt', 'desc')
+            .get();
+
+        for (const doc of snapshot.docs) {
+            const request = doc.data();
+            
+            // Obtener datos adicionales
+            const [campaign, seller, buyer] = await Promise.all([
+                db.collection('campaigns').doc(request.campaignId).get(),
+                db.collection('users').doc(request.sellerId).get(),
+                db.collection('users').doc(request.buyerId).get()
+            ]);
+
+            // Crear fila de la tabla
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${doc.id}</td>
+                <td>${campaign.exists ? campaign.data().name : 'N/A'}</td>
+                <td>${seller.exists ? seller.data().email : 'N/A'}</td>
+                <td>${buyer.exists ? buyer.data().email : 'N/A'}</td>
+                <td>${request.accountsRequested}</td>
+                <td>${request.amount} ${request.currency}</td>
+                <td>
+                    <span class="status-badge ${request.status}">
+                        ${request.status.charAt(0).toUpperCase() + request.status.slice(1)}
+                    </span>
+                </td>
+                <td>${formatDate(request.createdAt.toDate())}</td>
+                <td class="actions-cell">
+                    ${request.status === 'pending' ? `
+                        <button onclick="markPaymentAsPaid('${doc.id}')" class="action-button success">
+                            <i class='bx bx-check'></i>
+                            Mark as Paid
+                        </button>
+                    ` : ''}
+                </td>
+            `;
+
+            paymentRequestsList.appendChild(tr);
+        }
+    } catch (error) {
+        console.error('Error loading payment requests:', error);
+        alert('Error loading payment requests: ' + error.message);
+    }
+}
+
+// Marcar pago como realizado
+async function markPaymentAsPaid(paymentRequestId) {
+    try {
+        // Obtener la solicitud de pago
+        const paymentRequestDoc = await db.collection('payment_requests').doc(paymentRequestId).get();
+        if (!paymentRequestDoc.exists) {
+            throw new Error('Payment request not found');
+        }
+
+        const paymentRequest = paymentRequestDoc.data();
+
+        // Confirmar acción
+        if (!confirm(`Are you sure you want to mark this payment as paid? This will confirm the payment of ${paymentRequest.accountsRequested} accounts for ${paymentRequest.amount} ${paymentRequest.currency}`)) {
+            return;
+        }
+
+        // Actualizar estado de la solicitud
+        await db.collection('payment_requests').doc(paymentRequestId).update({
+            status: 'paid',
+            paidAt: firebase.firestore.FieldValue.serverTimestamp(),
+            paidBy: auth.currentUser.uid
+        });
+
+        // Actualizar estado de la campaña
+        await db.collection('campaigns').doc(paymentRequest.campaignId).update({
+            status: 'payment_completed',
+            lastPaymentAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        // Crear mensaje en el chat
+        const message = {
+            text: '💰 El administrador ha confirmado el pago',
+            type: 'system',
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+
+        await db.collection('requests')
+            .doc(paymentRequest.requestId)
+            .collection('messages')
+            .add(message);
+
+        alert('Payment marked as paid successfully!');
+        loadPaymentRequests(); // Recargar lista
+    } catch (error) {
+        console.error('Error marking payment as paid:', error);
+        alert('Error marking payment as paid: ' + error.message);
+    }
+}
+
 // Initialize admin page
 document.addEventListener('DOMContentLoaded', () => {
     checkAdmin();
     initializeEventListeners();
     loadPendingCampaigns();
     loadApprovedVerifications();
-});
+    loadPaymentRequests();
 
-
-// Initialize admin page
-document.addEventListener('DOMContentLoaded', () => {
-    checkAdmin();
-    loadApprovedVerifications();
-    loadPendingCampaigns();
+    // Agregar event listener para el botón de refresh de solicitudes de pago
+    document.getElementById('refreshPaymentRequestsBtn').addEventListener('click', loadPaymentRequests);
 });

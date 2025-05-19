@@ -3,136 +3,183 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - KYC P2P Platform</title>
+    <title>Dashboard - KYC P2P Admin</title>
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="css/admin.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>Admin Dashboard</h1>
-            <button onclick="handleLogout()" style="float: right;">Logout</button>
-        </header>
-
-        <!-- Panel de Control -->
-        <div class="admin-controls">
-            <div class="search-filters">
-                <div class="search-box">
-                    <i class='bx bx-search'></i>
-                    <input type="text" id="campaignSearch" placeholder="Search campaigns..." />
-                </div>
-                <div class="filter-group">
-                    <select id="dateFilter">
-                        <option value="all">All Dates</option>
-                        <option value="today">Today</option>
-                        <option value="week">This Week</option>
-                        <option value="month">This Month</option>
-                    </select>
-                    <select id="sortOrder">
-                        <option value="newest">Newest First</option>
-                        <option value="oldest">Oldest First</option>
-                        <option value="accounts">Most Accounts</option>
-                        <option value="price">Highest Price</option>
-                    </select>
-                </div>
+    <div class="admin-container">
+        <!-- Sidebar -->
+        <nav class="admin-sidebar">
+            <div class="sidebar-header">
+                <img src="img/logo.png" alt="KYC P2P" class="logo">
+                <h2>Admin Panel</h2>
             </div>
-            <div class="stats-bar">
-                <div class="stat-item">
-                    <i class='bx bx-time'></i>
-                    <span id="pendingCount">0</span>
-                    <label>Pending</label>
-                </div>
-                <div class="stat-item">
-                    <i class='bx bx-check-circle'></i>
-                    <span id="approvedCount">0</span>
-                    <label>Approved</label>
-                </div>
-                <div class="stat-item">
-                    <i class='bx bx-dollar-circle'></i>
-                    <span id="totalValue">0</span>
-                    <label>Total USDT</label>
-                </div>
+            <ul class="sidebar-menu">
+                <li class="active">
+                    <a href="admin.html">
+                        <i class='bx bxs-dashboard'></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="admin-campaigns.html">
+                        <i class='bx bx-list-ul'></i>
+                        <span>Campaigns</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="admin-payments.html">
+                        <i class='bx bx-dollar'></i>
+                        <span>Payments</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="admin-users.html">
+                        <i class='bx bx-user'></i>
+                        <span>Users</span>
+                    </a>
+                </li>
+            </ul>
+            <div class="sidebar-footer">
+                <button onclick="handleLogout()" class="logout-btn">
+                    <i class='bx bx-log-out'></i>
+                    <span>Logout</span>
+                </button>
             </div>
-        </div>
+        </nav>
 
-        <!-- Grid Principal -->
-        <div class="admin-grid">
-            <!-- Campañas Pendientes -->
-            <div class="admin-section campaigns-section">
-                <div class="section-header">
-                    <div class="header-title">
-                        <i class='bx bx-time-five'></i>
-                        <h2>Pending Campaigns</h2>
-                    </div>
-                    <div class="header-actions">
-                        <button id="approveAllBtn" class="action-button">
-                            <i class='bx bx-check-double'></i>
-                            Approve Selected
-                        </button>
-                        <button id="refreshBtn" class="action-button">
-                            <i class='bx bx-refresh'></i>
-                        </button>
-                    </div>
-                </div>
-                <div class="campaigns-table-container">
-                    <table class="campaigns-table">
-                        <thead>
-                            <tr>
-                                <th><input type="checkbox" id="selectAll"></th>
-                                <th>Campaign Name</th>
-                                <th>Creator</th>
-                                <th>Accounts</th>
-                                <th>Price (USDT)</th>
-                                <th>Status</th>
-                                <th>Payment Proof</th>
-                                <th>Payment Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="pendingCampaigns">
-                            <!-- Campaigns will be loaded here -->
-                        </tbody>
-                    </table>
-                </div>
-                <div class="pagination">
-                    <button id="prevPage" class="page-button" disabled>
-                        <i class='bx bx-chevron-left'></i>
-                    </button>
-                    <span id="pageInfo">Page 1 of 1</span>
-                    <button id="nextPage" class="page-button" disabled>
-                        <i class='bx bx-chevron-right'></i>
+        <!-- Main Content -->
+        <main class="admin-main">
+            <header class="content-header">
+                <h1>Dashboard Overview</h1>
+                <div class="header-actions">
+                    <button id="refreshBtn" class="action-button">
+                        <i class='bx bx-refresh'></i>
+                        Refresh
                     </button>
                 </div>
+            </header>
+
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class='bx bx-list-ul'></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>Total Campaigns</h3>
+                        <p id="totalCampaigns">0</p>
+                    </div>
+                    <div class="stat-change positive">
+                        <i class='bx bx-up-arrow-alt'></i>
+                        <span id="campaignsChange">0%</span>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class='bx bx-dollar-circle'></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>Total Revenue</h3>
+                        <p id="totalRevenue">0 USDT</p>
+                    </div>
+                    <div class="stat-change positive">
+                        <i class='bx bx-up-arrow-alt'></i>
+                        <span id="revenueChange">0%</span>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class='bx bx-user'></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>Active Users</h3>
+                        <p id="activeUsers">0</p>
+                    </div>
+                    <div class="stat-change positive">
+                        <i class='bx bx-up-arrow-alt'></i>
+                        <span id="usersChange">0%</span>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class='bx bx-check-circle'></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>Success Rate</h3>
+                        <p id="successRate">0%</p>
+                    </div>
+                    <div class="stat-change positive">
+                        <i class='bx bx-up-arrow-alt'></i>
+                        <span id="successChange">0%</span>
+                    </div>
+                </div>
             </div>
 
-            <!-- Verificaciones Aprobadas -->
-            <div class="admin-section verifications-section">
-                <div class="section-header">
-                    <i class='bx bx-check-circle'></i>
-                    <h2>Recent Verifications</h2>
+            <!-- Charts Grid -->
+            <div class="charts-grid">
+                <!-- Revenue Chart -->
+                <div class="chart-card">
+                    <h3>Revenue Overview</h3>
+                    <canvas id="revenueChart"></canvas>
                 </div>
-                <div id="verificationsList" class="section-content">
-                    <!-- Verifications will be loaded here -->
+
+                <!-- Campaign Status Distribution -->
+                <div class="chart-card">
+                    <h3>Campaign Status</h3>
+                    <canvas id="campaignStatusChart"></canvas>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="activity-card">
+                    <h3>Recent Activity</h3>
+                    <div class="activity-list" id="recentActivity">
+                        <!-- Activity items will be loaded here -->
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="quick-actions-card">
+                    <h3>Quick Actions</h3>
+                    <div class="quick-actions-grid">
+                        <a href="admin-campaigns.html" class="quick-action-btn">
+                            <i class='bx bx-list-plus'></i>
+                            <span>View Campaigns</span>
+                        </a>
+                        <a href="admin-payments.html" class="quick-action-btn">
+                            <i class='bx bx-money'></i>
+                            <span>Process Payments</span>
+                        </a>
+                        <a href="admin-users.html" class="quick-action-btn">
+                            <i class='bx bx-user-plus'></i>
+                            <span>Manage Users</span>
+                        </a>
+                        <button class="quick-action-btn" onclick="generateReport()">
+                            <i class='bx bx-file'></i>
+                            <span>Generate Report</span>
+                        </button>
+                    </div>
                 </div>
             </div>
-        </div>
+        </main>
     </div>
 
     <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
-    
-    <!-- Modal para mostrar la imagen -->
-    <div id="imageModal" class="modal">
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <img id="modalImage" src="" alt="Payment Proof">
-        </div>
-    </div>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
 
+    <!-- App -->
     <script src="js/config.js"></script>
     <script src="js/auth.js"></script>
-    <script src="js/admin.js"></script>
+    <script src="js/admin-dashboard.js"></script>
 </body>
 </html>
