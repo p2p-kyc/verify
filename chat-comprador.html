@@ -390,6 +390,62 @@
         #finishButton:hover::after {
             opacity: 1;
         }
+
+        /* Estilos para mensajes de cobro */
+        .charge-message {
+            max-width: 80% !important;
+        }
+
+        .charge-content {
+            background-color: rgba(76, 175, 80, 0.1);
+            border: 1px solid var(--whatsapp-light-green);
+            padding: 12px;
+            border-radius: 8px;
+        }
+
+        .charge-text {
+            color: var(--text-primary);
+            margin-bottom: 12px;
+            font-size: 0.95rem;
+        }
+
+        .charge-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+
+        .button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.95rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.2s;
+        }
+
+        .button i {
+            font-size: 1.1rem;
+        }
+
+        .button.primary {
+            background-color: var(--whatsapp-light-green);
+            color: white;
+        }
+
+        .button.secondary {
+            background-color: transparent;
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .button:hover {
+            opacity: 0.9;
+            transform: scale(1.02);
+        }
     </style>
 </head>
 <body>

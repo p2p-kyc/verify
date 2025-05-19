@@ -297,10 +297,31 @@ function appendMessage(message) {
     messageDiv.classList.add(message.userId === currentUser.uid ? 'outgoing' : 'incoming');
     messageDiv.dataset.timestamp = message.createdAt?.seconds || Date.now() / 1000;
     
-    messageDiv.innerHTML = `
-        <div class="message-content">${message.text}</div>
-        <div class="timestamp">${formatDate(message.createdAt)}</div>
-    `;
+    // Si es un mensaje de cobro, mostrar el botón de pago
+    if (message.type === 'charge') {
+        messageDiv.classList.add('charge-message');
+        messageDiv.innerHTML = `
+            <div class="message-content charge-content">
+                <div class="charge-text">${message.text}</div>
+                <div class="charge-actions">
+                    <button class="button primary" onclick="handlePayment('${message.paymentRequestId}', 'approved')">
+                        <i class='bx bx-check'></i>
+                        Pagar cuentas
+                    </button>
+                    <button class="button secondary" onclick="handlePayment('${message.paymentRequestId}', 'rejected')">
+                        <i class='bx bx-x'></i>
+                        Rechazar
+                    </button>
+                </div>
+            </div>
+            <div class="timestamp">${formatDate(message.createdAt)}</div>
+        `;
+    } else {
+        messageDiv.innerHTML = `
+            <div class="message-content">${message.text}</div>
+            <div class="timestamp">${formatDate(message.createdAt)}</div>
+        `;
+    }
 
     // Encontrar la posición correcta para insertar el mensaje
     const messages = Array.from(messagesContainer.children);
@@ -316,6 +337,63 @@ function appendMessage(message) {
     } else {
         // Insertar en la posición correcta
         messagesContainer.insertBefore(messageDiv, messages[position]);
+    }
+}
+
+// Manejar el pago
+async function handlePayment(paymentRequestId, response) {
+    try {
+        // Obtener la solicitud de pago
+        const paymentRequestDoc = await window.db.collection('payment_requests').doc(paymentRequestId).get();
+        if (!paymentRequestDoc.exists) {
+            throw new Error('Solicitud de pago no encontrada');
+        }
+
+        const paymentRequestData = paymentRequestDoc.data();
+
+        // Verificar que la solicitud esté pendiente
+        if (paymentRequestData.status !== 'pending') {
+            throw new Error('Esta solicitud de pago ya fue procesada');
+        }
+
+        // Confirmar la acción con el usuario
+        const action = response === 'approved' ? 'aprobar' : 'rechazar';
+        if (!confirm(`¿Estás seguro de que deseas ${action} el pago de ${paymentRequestData.accountsRequested} cuenta${paymentRequestData.accountsRequested > 1 ? 's' : ''} por $${paymentRequestData.amount} ${paymentRequestData.currency}?`)) {
+            return;
+        }
+
+        // Actualizar estado de la solicitud
+        await window.db.collection('payment_requests').doc(paymentRequestId).update({
+            status: response,
+            respondedAt: window.firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        // Actualizar estado de la campaña
+        await window.db.collection('campaigns').doc(paymentRequestData.campaignId).update({
+            status: response === 'approved' ? 'processing_payment' : 'active'
+        });
+
+        // Crear mensaje de respuesta
+        const message = {
+            text: response === 'approved' 
+                ? '👍 Has aprobado la solicitud de pago'
+                : '❌ Has rechazado la solicitud de pago',
+            userId: currentUser.uid,
+            type: 'payment_response',
+            paymentRequestId,
+            response,
+            createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
+        };
+
+        // Guardar mensaje en la conversación
+        await window.db.collection('requests')
+            .doc(paymentRequestData.requestId)
+            .collection('messages')
+            .add(message);
+
+    } catch (error) {
+        console.error('Error al procesar respuesta de pago:', error);
+        alert('Error al procesar la respuesta: ' + error.message);
     }
 }
 
