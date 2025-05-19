@@ -142,8 +142,8 @@ function closeCreateCampaignModal() {
 }
 
 // Calculate total price
-function calculateTotal() {
-    const accountCount = parseInt(document.getElementById('accountCount').value) || 0;
+function calculateTotalPrice() {
+    const accountCount = parseFloat(document.getElementById('accountCount').value) || 0;
     const pricePerAccount = parseFloat(document.getElementById('pricePerAccount').value) || 0;
     const totalPrice = accountCount * pricePerAccount;
     document.getElementById('totalPrice').value = totalPrice.toFixed(2);
@@ -204,8 +204,8 @@ function initializeEventListeners() {
         const pricePerAccountInput = document.getElementById('pricePerAccount');
 
         if (accountCountInput && pricePerAccountInput) {
-            accountCountInput.addEventListener('input', calculateTotal);
-            pricePerAccountInput.addEventListener('input', calculateTotal);
+            accountCountInput.addEventListener('input', calculateTotalPrice);
+            pricePerAccountInput.addEventListener('input', calculateTotalPrice);
         }
 
         // Payment proof upload
