@@ -108,10 +108,15 @@ async function handleCreateCampaign(event) {
         form.reset();
         form.removeAttribute('data-mode');
         form.removeAttribute('data-campaign-id');
-        document.getElementById('paymentProofBase64').value = '';
-        document.getElementById('paymentProofPreview').innerHTML = '';
-        document.querySelector('.modal-title').textContent = 'Create Campaign';
-        document.querySelector('.modal-submit-btn').textContent = 'Create';
+        const proofBase64 = document.getElementById('paymentProofBase64');
+        const proofPreview = document.getElementById('paymentProofPreview');
+        const modalTitle = document.querySelector('.modal-title');
+        const submitBtn = document.querySelector('.modal-submit-btn');
+
+        if (proofBase64) proofBase64.value = '';
+        if (proofPreview) proofPreview.innerHTML = '';
+        if (modalTitle) modalTitle.textContent = 'Create Campaign';
+        if (submitBtn) submitBtn.textContent = 'Create';
         closeCreateCampaignModal();
         
         // Reload campaigns
@@ -581,11 +586,44 @@ function createCampaignCard(id, campaign) {
         return null;
     }
 }
+
 // Toggle campaign menu
 function toggleCampaignMenu(id) {
-    const menu = document.getElementById(`menu-${id}`);
-    const isVisible = menu.style.display === 'block';
-    menu.style.display = isVisible ? 'none' : 'block';
+    const existingMenu = document.querySelector('.campaign-menu');
+    if (existingMenu) {
+        existingMenu.remove();
+        return;
+    }
+
+    const campaign = document.getElementById(`campaign-${id}`);
+    if (!campaign) return;
+
+    const menu = document.createElement('div');
+    menu.className = 'campaign-menu';
+    menu.innerHTML = `
+        <button onclick="viewCampaign('${id}')">
+            <i class='bx bx-show'></i>
+            <span>View Details</span>
+        </button>
+        <button onclick="editCampaign('${id}')">
+            <i class='bx bx-edit'></i>
+            <span>Edit</span>
+        </button>
+        <button onclick="deleteCampaign('${id}')" class="delete-btn">
+            <i class='bx bx-trash'></i>
+            <span>Delete</span>
+        </button>
+    `;
+
+    campaign.appendChild(menu);
+
+    // Cerrar el menú al hacer clic fuera de él
+    document.addEventListener('click', function closeMenu(e) {
+        if (!menu.contains(e.target) && !e.target.closest('.campaign-menu-btn')) {
+            menu.remove();
+            document.removeEventListener('click', closeMenu);
+        }
+    });
 }
 
 // Edit campaign
@@ -683,6 +721,10 @@ async function deleteCampaign(id) {
 // Join campaign
 async function joinCampaign(id) {
     try {
+        if (!window.currentUser) {
+            showToast('Please log in to join campaigns', 'error');
+            return;
+        }
         const campaignRef = db.collection('campaigns').doc(id);
         const doc = await campaignRef.get();
 
@@ -694,7 +736,7 @@ async function joinCampaign(id) {
         const campaign = doc.data();
 
         // Check if user is the campaign owner
-        if (campaign.createdBy === currentUser.uid) {
+        if (campaign.createdBy === window.currentUser?.uid) {
             showToast('You cannot join your own campaign', 'error');
             return;
         }
@@ -714,7 +756,7 @@ async function joinCampaign(id) {
         // Check if user has already joined
         const participantRef = db.collection('participants')
             .where('campaignId', '==', id)
-            .where('userId', '==', currentUser.uid)
+            .where('userId', '==', window.currentUser?.uid)
             .limit(1);
 
         const participantSnapshot = await participantRef.get();
@@ -726,8 +768,8 @@ async function joinCampaign(id) {
         // Create participant document
         const participantData = {
             campaignId: id,
-            userId: currentUser.uid,
-            userName: currentUser.displayName || 'Unknown',
+            userId: window.currentUser?.uid,
+            userName: window.currentUser?.displayName || 'Unknown',
             status: 'pending',
             joinedAt: firebase.firestore.FieldValue.serverTimestamp()
         };
@@ -976,6 +1018,10 @@ function showToast(message, type = 'success') {
     });
 }
 
+// Get Firebase instance
+const db = firebase.firestore();
+let unsubscribeConnection = null;
+
 // Initialize the dashboard
 async function initializeDashboard() {
     try {
@@ -984,22 +1030,26 @@ async function initializeDashboard() {
 
         // Check if user is logged in
         firebase.auth().onAuthStateChanged((user) => {
+            window.currentUser = user;
             if (user) {
-                currentUser = user;
                 loadCampaigns();
 
-                // Listen for connection changes
-                const unsubscribeConnection = db.collection('campaigns').onSnapshot(() => {
-                    // Connection established
-                }, (error) => {
-                    if (error.code === 'unavailable') {
-                        showOfflineMessage();
-                    }
-                });
-
-                // Guardar función para limpiar el listener
-                window.unsubscribeCampaigns = unsubscribeConnection;
+                // Listen for connection changes if not already listening
+                if (!unsubscribeConnection) {
+                    unsubscribeConnection = db.collection('campaigns').onSnapshot(() => {
+                        // Connection established
+                    }, (error) => {
+                        if (error.code === 'unavailable') {
+                            showOfflineMessage();
+                        }
+                    });
+                }
             } else {
+                // Clean up connection listener
+                if (unsubscribeConnection) {
+                    unsubscribeConnection();
+                    unsubscribeConnection = null;
+                }
                 window.location.href = 'login.html';
             }
         });

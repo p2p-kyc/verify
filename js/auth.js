@@ -72,16 +72,19 @@ async function isAdmin(uid) {
     }
 }
 
-// Variable global para almacenar el rol del usuario
+// Variables globales
 if (typeof window.userRole === 'undefined') {
     window.userRole = null;
+}
+if (typeof window.currentUser === 'undefined') {
+    window.currentUser = null;
 }
 
 // Escuchar cambios en el estado de autenticación
 auth.onAuthStateChanged(async (user) => {
     if (user) {
         // Usuario autenticado
-        currentUser = user;
+        window.currentUser = user;
         const userDoc = await db.collection('users').doc(user.uid).get();
         
         if (userDoc.exists) {
