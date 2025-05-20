@@ -89,14 +89,15 @@ window.auth.onAuthStateChanged(async (user) => {
         
         if (userDoc.exists) {
             // Actualizar último acceso y guardar rol
-            userRole = userDoc.data().role;
-            await db.collection('users').doc(user.uid).update({
+            const userData = userDoc.data();
+            window.userRole = userData.role;
+            await window.db.collection('users').doc(user.uid).update({
                 lastLogin: firebase.firestore.FieldValue.serverTimestamp()
             });
         } else {
             // Crear documento de usuario si no existe
-            userRole = 'user'; // rol por defecto
-            await db.collection('users').doc(user.uid).set({
+            window.userRole = 'user'; // rol por defecto
+            await window.db.collection('users').doc(user.uid).set({
                 email: user.email,
                 role: userRole,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp(),

@@ -574,7 +574,7 @@ function createCampaignCard(id, campaign) {
                     ` : ''}
                     <button class="view-btn" onclick="viewCampaign('${sanitize(id)}')">
                         <i class='bx bx-show'></i>
-                        <span>View</span>
+                        <span>${window.userRole === 'seller' ? 'View Campaign' : 'View Details'}</span>
                     </button>
                 </div>
             </div>
