@@ -47,6 +47,63 @@ function createChargeButton(campaign) {
 // Event listeners
 messageForm.addEventListener('submit', handleMessageSubmit);
 
+// Manejar selección de imagen
+document.getElementById('imageButton').addEventListener('click', () => {
+    document.getElementById('imageInput').click();
+});
+
+// Convertir imagen a base64
+function getBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
+    });
+}
+
+// Manejar cambio en input de imagen
+document.getElementById('imageInput').addEventListener('change', async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    try {
+        const base64Image = await getBase64(file);
+        await sendImageMessage(base64Image);
+        event.target.value = ''; // Limpiar input
+    } catch (error) {
+        console.error('Error al procesar la imagen:', error);
+        alert('Error al procesar la imagen. Por favor, intenta de nuevo.');
+    }
+});
+
+// Enviar mensaje con imagen
+async function sendImageMessage(imageData) {
+    if (!activeRequest) {
+        alert('Por favor selecciona un chat primero');
+        return;
+    }
+
+    try {
+        const messageRef = window.db.collection('requests')
+            .doc(activeRequest.id)
+            .collection('messages')
+            .doc();
+
+        await messageRef.set({
+            type: 'image',
+            imageData: imageData,
+            userId: currentUser.uid,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        scrollToBottom();
+    } catch (error) {
+        console.error('Error al enviar imagen:', error);
+        alert('Error al enviar la imagen. Por favor, intenta de nuevo.');
+    }
+};
+
 // Esperar a que Firebase esté inicializado
 window.addEventListener('load', () => {
     // Escuchar cambios de autenticación
@@ -331,7 +388,19 @@ async function appendMessage(message) {
         textSpan.className = 'message-text';
 
         // Aplicar estilo especial según el tipo de mensaje
-        if (message.type === 'payment_proof') {
+        if (message.type === 'image') {
+            const imageContainer = document.createElement('div');
+            const image = document.createElement('img');
+            image.src = message.imageData;
+            image.alt = 'Imagen';
+            image.style.maxWidth = '300px';
+            image.style.borderRadius = '8px';
+            imageContainer.appendChild(image);
+            contentDiv.appendChild(imageContainer);
+            contentDiv.appendChild(timeSpan);
+            messageDiv.appendChild(contentDiv);
+            return;
+        } else if (message.type === 'payment_proof') {
             textSpan.classList.add('payment-proof-message');
             contentDiv.classList.add('payment-proof-content');
 

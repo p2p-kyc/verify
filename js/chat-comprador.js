@@ -11,6 +11,63 @@ const finishButton = document.getElementById('finishButton');
 
 // Event listeners
 messageForm.addEventListener('submit', handleMessageSubmit);
+
+// Manejar selección de imagen
+document.getElementById('imageButton').addEventListener('click', () => {
+    document.getElementById('imageInput').click();
+});
+
+// Convertir imagen a base64
+function getBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
+    });
+}
+
+// Manejar cambio en input de imagen
+document.getElementById('imageInput').addEventListener('change', async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    try {
+        const base64Image = await getBase64(file);
+        await sendImageMessage(base64Image);
+        event.target.value = ''; // Limpiar input
+    } catch (error) {
+        console.error('Error al procesar la imagen:', error);
+        alert('Error al procesar la imagen. Por favor, intenta de nuevo.');
+    }
+});
+
+// Enviar mensaje con imagen
+async function sendImageMessage(imageData) {
+    if (!activeRequest) {
+        alert('Por favor selecciona un chat primero');
+        return;
+    }
+
+    try {
+        const messageRef = window.db.collection('requests')
+            .doc(activeRequest.id)
+            .collection('messages')
+            .doc();
+
+        await messageRef.set({
+            type: 'image',
+            imageData: imageData,
+            userId: currentUser.uid,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        scrollToBottom();
+    } catch (error) {
+        console.error('Error al enviar imagen:', error);
+        alert('Error al enviar la imagen. Por favor, intenta de nuevo.');
+    }
+};
 finishButton.addEventListener('click', handleFinishCampaign);
 
 // Esperar a que Firebase esté inicializado
@@ -292,13 +349,36 @@ async function handleFinishCampaign() {
 
 // Agregar mensaje al contenedor
 function appendMessage(message) {
+    if (message.type === 'payment_proof') {
+        // No mostrar mensajes de comprobante de pago al comprador
+        return;
+    }
+
     const messageDiv = document.createElement('div');
     messageDiv.classList.add('message');
     messageDiv.classList.add(message.userId === currentUser.uid ? 'outgoing' : 'incoming');
     messageDiv.dataset.timestamp = message.createdAt?.seconds || Date.now() / 1000;
     
-    // Si es un mensaje de cobro, mostrar el botón de pago
-    if (message.type === 'charge') {
+    if (message.type === 'image') {
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'message-content';
+
+        const imageContainer = document.createElement('div');
+        const image = document.createElement('img');
+        image.src = message.imageData;
+        image.alt = 'Imagen';
+        image.style.maxWidth = '300px';
+        image.style.borderRadius = '8px';
+
+        const timeSpan = document.createElement('span');
+        timeSpan.className = 'timestamp';
+        timeSpan.textContent = formatDate(message.createdAt);
+
+        imageContainer.appendChild(image);
+        contentDiv.appendChild(imageContainer);
+        contentDiv.appendChild(timeSpan);
+        messageDiv.appendChild(contentDiv);
+    } else if (message.type === 'charge') {
         messageDiv.classList.add('charge-message');
         messageDiv.innerHTML = `
             <div class="message-content charge-content">
@@ -316,9 +396,6 @@ function appendMessage(message) {
             </div>
             <div class="timestamp">${formatDate(message.createdAt)}</div>
         `;
-    } else if (message.type === 'payment_proof') {
-        // No mostrar mensajes de comprobante de pago al comprador
-        return;
     } else {
         messageDiv.innerHTML = `
             <div class="message-content">${message.text}</div>

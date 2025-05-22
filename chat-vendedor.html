@@ -705,6 +705,10 @@
                 <!-- Los mensajes se cargarán dinámicamente aquí -->
             </div>
             <form id="messageForm" class="message-form">
+                <input type="file" id="imageInput" accept="image/*" style="display: none;">
+                <button type="button" id="imageButton" style="background: none; border: none; color: var(--whatsapp-green); cursor: pointer;">
+                    <i class='bx bx-image'></i>
+                </button>
                 <input type="text" id="messageInput" placeholder="Escribe un mensaje..." autocomplete="off">
                 <button type="submit" id="sendButton">
                     <i class='bx bx-send'></i>
