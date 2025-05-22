@@ -2,15 +2,15 @@
 let currentUser = null;
 let currentCampaign = null;
 
-// Escuchar cambios de autenticación
-auth.onAuthStateChanged(async user => {
-    if (!user) {
-        window.location.href = 'index.html';
-        return;
-    }
-
-    currentUser = user;
-    await loadCampaignAndRequests();
+// Esperar a que Firebase esté inicializado
+window.addEventListener('load', () => {
+    // Escuchar cambios de autenticación
+    window.auth.onAuthStateChanged(async user => {
+        if (user) {
+            currentUser = user;
+            await loadCampaignAndRequests();
+        }
+    });
 });
 
 // Cargar campaña y solicitudes
@@ -18,21 +18,28 @@ async function loadCampaignAndRequests() {
     try {
         const urlParams = new URLSearchParams(window.location.search);
         const campaignId = urlParams.get('campaignId');
+        const action = urlParams.get('action');
 
         if (!campaignId) {
             throw new Error('No campaign ID provided');
         }
 
         // Obtener datos de la campaña
-        const campaignDoc = await db.collection('campaigns').doc(campaignId).get();
+        const campaignDoc = await window.db.collection('campaigns').doc(campaignId).get();
         if (!campaignDoc.exists) {
             throw new Error('Campaign not found');
         }
 
         currentCampaign = { id: campaignDoc.id, ...campaignDoc.data() };
 
-        // Verificar que el usuario actual es el creador de la campaña
-        if (currentCampaign.createdBy !== currentUser.uid) {
+        // Si el action es join, mostrar la interfaz para unirse
+        if (action === 'join') {
+            displayJoinInterface(currentCampaign);
+            return;
+        }
+
+        // Si no es join, verificar que el usuario es el creador
+        if (currentCampaign.createdBy !== window.currentUser.uid) {
             throw new Error('You do not have permission to view these requests');
         }
 
@@ -201,6 +208,93 @@ async function getUserData(userId) {
 }
 
 // Ya no necesitamos esta función porque llamamos directamente a openChatWithSeller
+
+// Mostrar interfaz para unirse a la campaña
+function displayJoinInterface(campaign) {
+    const container = document.getElementById('campaignInfo');
+    container.innerHTML = `
+        <div class="campaign-header">
+            <h2>${campaign.name}</h2>
+            <div class="campaign-stats">
+                <span class="stat">
+                    <i class='bx bx-user-check'></i>
+                    ${campaign.verificationCount}/${campaign.accountCount} verificaciones
+                </span>
+                <span class="stat">
+                    <i class='bx bx-dollar-circle'></i>
+                    ${campaign.pricePerAccount} USDT por verificación
+                </span>
+                <span class="stat">
+                    <i class='bx bx-time'></i>
+                    Creada el ${formatDate(campaign.createdAt)}
+                </span>
+            </div>
+            <p class="campaign-description">${campaign.description}</p>
+        </div>
+        <div class="join-section">
+            <h3>Unirse a esta campaña</h3>
+            <p>Al unirte, estarás de acuerdo en participar en las verificaciones de esta campaña.</p>
+            <button onclick="submitJoinRequest()" class="join-btn">
+                <i class='bx bx-user-plus'></i>
+                Enviar solicitud
+            </button>
+        </div>
+    `;
+
+    // Ocultar la lista de solicitudes
+    const requestsList = document.getElementById('requestsList');
+    if (requestsList) {
+        requestsList.style.display = 'none';
+    }
+}
+
+// Enviar solicitud para unirse
+async function submitJoinRequest() {
+    try {
+        // Verificar si ya existe una solicitud
+        const existingRequest = await window.db.collection('requests')
+            .where('campaignId', '==', currentCampaign.id)
+            .where('userId', '==', window.currentUser.uid)
+            .get();
+
+        if (!existingRequest.empty) {
+            throw new Error('Ya has enviado una solicitud para esta campaña');
+        }
+
+        // Crear nueva solicitud
+        await window.db.collection('requests').add({
+            campaignId: currentCampaign.id,
+            userId: window.currentUser.uid,
+            status: 'pending',
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        showToast('Solicitud enviada exitosamente', 'success');
+        
+        // Redirigir al dashboard
+        setTimeout(() => {
+            window.location.href = 'dashboard.html';
+        }, 2000);
+    } catch (error) {
+        console.error('Error:', error);
+        showToast(error.message, 'error');
+    }
+}
+
+// Mostrar toast notification
+function showToast(message, type = 'success') {
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.innerHTML = `
+        <i class='bx ${type === 'success' ? 'bx-check' : 'bx-x'}'></i>
+        <span>${message}</span>
+    `;
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+        toast.remove();
+    }, 3000);
+}
 
 // Utilidades
 function formatDate(timestamp) {

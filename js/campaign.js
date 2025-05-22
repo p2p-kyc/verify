@@ -276,26 +276,36 @@ async function handleSubmitVerification(event) {
             throw new Error('Please enter your Binance username');
         }
 
-        // Upload file to Firebase Storage
-        const storageRef = storage.ref();
-        const fileRef = storageRef.child(`verifications/${campaignId}/${currentUser.uid}/${file.name}`);
-        await fileRef.put(file);
-        const proofUrl = await fileRef.getDownloadURL();
+        // Convertir imagen a base64
+        const base64String = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result.split(',')[1]); // Obtener solo la parte base64
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
 
-        // Create verification document
-        const verificationRef = await db.collection('verifications').add({
+        // Crear documento de verificación y actualizar campaña
+        const batch = db.batch();
+
+        // Documento de verificación
+        const verificationRef = db.collection('verifications').doc();
+        batch.set(verificationRef, {
             campaignId,
             userId: currentUser.uid,
             binanceUser,
-            proofUrl,
             status: 'pending',
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
 
-        // Update campaign verification count
-        await db.collection('campaigns').doc(campaignId).update({
-            verificationCount: firebase.firestore.FieldValue.increment(1)
+        // Actualizar campaña
+        const campaignRef = db.collection('campaigns').doc(campaignId);
+        batch.update(campaignRef, {
+            verificationCount: firebase.firestore.FieldValue.increment(1),
+            payment_proof: base64String
         });
+
+        // Ejecutar batch
+        await batch.commit();
 
         // Show success message
         alert('Verification submitted successfully!');
@@ -309,7 +319,7 @@ async function handleSubmitVerification(event) {
 
 // Handle verification state
 function handleVerificationState() {
-    if (!verification) return;
+    // ...
     
     const chatSection = document.getElementById('chatSection');
     const approvalSection = document.getElementById('approvalSection');

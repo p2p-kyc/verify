@@ -574,7 +574,7 @@ function createCampaignCard(id, campaign) {
                     ` : ''}
                     <button class="view-btn" onclick="viewCampaign('${sanitize(id)}')">
                         <i class='bx bx-show'></i>
-                        <span>${window.userRole === 'seller' ? 'View Campaign' : 'View Details'}</span>
+                        <span>View</span>
                     </button>
                 </div>
             </div>
@@ -818,21 +818,76 @@ async function joinCampaign(id) {
     }
 }
 
-// View campaign details
+// View campaign
 async function viewCampaign(id) {
     try {
-        const doc = await db.collection('campaigns').doc(id).get();
-        if (!doc.exists) {
-            showToast('Campaign not found', 'error');
-            return;
+        const campaignDoc = await window.db.collection('campaigns').doc(id).get();
+        if (!campaignDoc.exists) {
+            throw new Error('Campaign not found');
         }
 
-        const campaign = doc.data();
-        
+        const campaign = { id: campaignDoc.id, ...campaignDoc.data() };
+        const isCreator = campaign.createdBy === window.currentUser.uid;
+
+        if (isCreator) {
+            // Buscar solicitudes existentes para esta campaña
+            const requestsSnapshot = await window.db.collection('requests')
+                .where('campaignId', '==', id)
+                .where('status', '==', 'approved')
+                .get();
+
+            if (requestsSnapshot.empty) {
+                showToast('No hay vendedores activos en esta campaña', 'info');
+                return;
+            }
+
+            // Tomar la primera solicitud (podríamos agregar lógica para seleccionar una específica)
+            const requestDoc = requestsSnapshot.docs[0];
+            window.location.href = `chat-comprador.html?requestId=${requestDoc.id}`;
+        } else {
+            // Verificar si ya existe una solicitud para este usuario y campaña
+            const existingRequest = await window.db.collection('requests')
+                .where('campaignId', '==', id)
+                .where('userId', '==', window.currentUser.uid)
+                .get();
+
+            let requestId;
+
+            if (!existingRequest.empty) {
+                // Si ya existe una solicitud, usar esa
+                requestId = existingRequest.docs[0].id;
+            } else {
+                // Crear una nueva solicitud y chat
+                const requestData = {
+                    campaignId: id,
+                    userId: window.currentUser.uid,
+                    status: 'approved', // Aprobado automáticamente
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+
+                // Crear la solicitud
+                const requestRef = await window.db.collection('requests').add(requestData);
+                requestId = requestRef.id;
+
+                // Crear el primer mensaje del chat
+                const messageData = {
+                    text: '¡Hola! Me interesa participar en esta campaña.',
+                    userId: window.currentUser.uid,
+                    type: 'text',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+
+                // Agregar el mensaje a la colección de mensajes de la solicitud
+                await requestRef.collection('messages').add(messageData);
+            }
+
+            // Redirigir al chat del vendedor
+            window.location.href = `chat-vendedor.html?requestId=${requestId}`;
+        }
+
         // Get participants
-        const participantsSnapshot = await db.collection('participants')
+        const participantsSnapshot = await window.db.collection('participants')
             .where('campaignId', '==', id)
-            .orderBy('joinedAt', 'desc')
             .get();
 
         const participants = [];

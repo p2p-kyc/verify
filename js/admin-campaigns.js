@@ -64,8 +64,8 @@ async function loadCampaigns() {
                 accounts: campaign.accounts || 0,
                 price: `${campaign.price?.toFixed(2) || '0.00'} USDT`,
                 status: createStatusBadge(campaign.status || 'pending'),
-                proof: campaign.paymentProof ? 
-                    `<button class="view-proof-btn" onclick="viewPaymentProof('${campaign.paymentProof}')">View Proof</button>` : 
+                proof: campaign.paymentProofBase64 ? 
+                    `<button class="view-proof-btn" data-proof="${encodeURIComponent(campaign.paymentProofBase64)}" onclick="viewPaymentProof(this.dataset.proof)">View Proof</button>` : 
                     'No proof',
                 createdAt: campaign.createdAt?.toDate().toLocaleString() || 'Unknown',
                 actions: createActionButtons(doc.id, campaign.status || 'pending')
@@ -112,17 +112,22 @@ function createActionButtons(campaignId, status) {
 }
 
 // View payment proof in modal
-async function viewPaymentProof(proofUrl) {
+async function viewPaymentProof(encodedString) {
     try {
         const modal = document.getElementById('imageModal');
         const modalImg = document.getElementById('modalImage');
         const closeBtn = modal.querySelector('.close');
 
-        // Get download URL from Firebase Storage
-        const storageRef = firebase.storage().refFromURL(proofUrl);
-        const url = await storageRef.getDownloadURL();
+        // Decodificar la cadena URL-encoded
+        const base64String = decodeURIComponent(encodedString);
 
-        modalImg.src = url;
+        // Si la cadena base64 no incluye el prefijo data:image, agregarlo
+        if (!base64String.startsWith('data:image')) {
+            modalImg.src = 'data:image/jpeg;base64,' + base64String;
+        } else {
+            modalImg.src = base64String;
+        }
+
         modal.style.display = 'block';
 
         // Close modal when clicking X
@@ -136,7 +141,7 @@ async function viewPaymentProof(proofUrl) {
         };
     } catch (error) {
         console.error('Error viewing payment proof:', error);
-        alert('Error loading payment proof image');
+        showNotification('Error loading payment proof image', 'error');
     }
 }
 
