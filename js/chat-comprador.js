@@ -316,6 +316,9 @@ function appendMessage(message) {
             </div>
             <div class="timestamp">${formatDate(message.createdAt)}</div>
         `;
+    } else if (message.type === 'payment_proof') {
+        // No mostrar mensajes de comprobante de pago al comprador
+        return;
     } else {
         messageDiv.innerHTML = `
             <div class="message-content">${message.text}</div>
