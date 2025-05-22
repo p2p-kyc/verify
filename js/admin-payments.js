@@ -59,7 +59,11 @@ function createPaymentRow(id, payment) {
         </td>
         <td>${createdAt}</td>
         <td>
-            ${payment.status === 'pending' ? `
+            ${payment.status === 'approved' ? `
+                <button onclick="openPaymentProofModal('${id}')" class="action-btn pay" title="Upload Payment Proof">
+                    <i class='bx bx-upload'></i>
+                </button>
+            ` : payment.status === 'pending' ? `
                 <button onclick="approvePayment('${id}')" class="action-btn approve" title="Approve Payment">
                     <i class='bx bx-check'></i>
                 </button>
@@ -72,7 +76,71 @@ function createPaymentRow(id, payment) {
     return row;
 }
 
-async function approvePayment(paymentId) {
+// Variables globales
+let currentPaymentId = null;
+
+// Funciones del modal
+function openPaymentProofModal(paymentId) {
+    currentPaymentId = paymentId;
+    const modal = document.getElementById('paymentProofModal');
+    modal.classList.add('active');
+}
+
+function closePaymentProofModal() {
+    const modal = document.getElementById('paymentProofModal');
+    modal.classList.remove('active');
+    document.getElementById('paymentProofForm').reset();
+    document.getElementById('imagePreview').style.display = 'none';
+    currentPaymentId = null;
+}
+
+// Preview de imagen
+document.getElementById('paymentProofFile').addEventListener('change', function(event) {
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const preview = document.getElementById('imagePreview');
+            preview.src = e.target.result;
+            preview.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    }
+});
+
+// Convertir imagen a base64
+function getBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
+    });
+}
+
+// Manejo del formulario
+document.getElementById('paymentProofForm').addEventListener('submit', async function(event) {
+    event.preventDefault();
+    const file = document.getElementById('paymentProofFile').files[0];
+    if (!file || !currentPaymentId) return;
+
+    try {
+        // Convertir imagen a base64
+        const base64Image = await getBase64(file);
+
+        // Actualizar pago y enviar mensaje
+        await completePaymentWithProof(currentPaymentId, base64Image);
+
+        // Cerrar modal y recargar
+        closePaymentProofModal();
+        loadPayments();
+    } catch (error) {
+        console.error('Error processing payment proof:', error);
+        alert('Error processing payment proof. Please try again.');
+    }
+});
+
+async function completePaymentWithProof(paymentId, imageUrl) {
     try {
         const paymentRef = window.db.collection('payment_requests').doc(paymentId);
         const paymentDoc = await paymentRef.get();
@@ -86,14 +154,44 @@ async function approvePayment(paymentId) {
             throw new Error('Campaign not found');
         }
 
+        // Obtener la solicitud asociada al pago
+        const requestsSnapshot = await window.db.collection('requests')
+            .where('campaignId', '==', payment.campaignId)
+            .where('userId', '==', payment.sellerId)
+            .get();
+
+        if (requestsSnapshot.empty) {
+            throw new Error('Request not found');
+        }
+
+        const requestDoc = requestsSnapshot.docs[0];
+        const chatRequestRef = requestDoc.ref;
+
         // Start a batch
         const batch = window.db.batch();
 
         // Update payment status
         batch.update(paymentRef, {
-            status: 'completed',
+            status: 'paid',
             completedAt: firebase.firestore.FieldValue.serverTimestamp(),
-            approvedBy: window.currentUser.uid
+            approvedBy: window.currentUser.uid,
+            paymentProofData: imageUrl // base64 image data
+        });
+
+        // Create chat message with payment proof
+        const paymentProofMessage = chatRequestRef.collection('messages').doc();
+        batch.set(paymentProofMessage, {
+            type: 'payment_proof',
+            content: 'Payment proof uploaded by admin',
+            imageData: imageUrl, // base64 image data
+            senderId: window.currentUser.uid,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            visibleTo: ['admin', payment.sellerId], // Solo visible para admin y vendedor
+            metadata: {
+                paymentId: paymentId,
+                amount: payment.amount,
+                currency: payment.currency
+            }
         });
 
         // Update campaign status

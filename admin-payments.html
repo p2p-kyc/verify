@@ -126,6 +126,33 @@
         </main>
     </div>
 
+    <!-- Payment Proof Modal -->
+    <div id="paymentProofModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Upload Payment Proof</h2>
+                <button class="close-btn" onclick="closePaymentProofModal()">
+                    <i class='bx bx-x'></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="paymentProofForm">
+                    <div class="form-group">
+                        <label for="paymentProofFile">Payment Receipt Image</label>
+                        <input type="file" id="paymentProofFile" accept="image/*" required>
+                        <div class="preview-container">
+                            <img id="imagePreview" src="#" alt="Preview" style="display: none; max-width: 100%;">
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="closePaymentProofModal()">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Upload and Complete Payment</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
