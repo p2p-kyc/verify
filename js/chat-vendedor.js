@@ -330,8 +330,28 @@ async function appendMessage(message) {
         const textSpan = document.createElement('span');
         textSpan.className = 'message-text';
 
-        // Aplicar estilo especial si es un mensaje de cobro
-        if (message.type === 'charge') {
+        // Aplicar estilo especial según el tipo de mensaje
+        if (message.type === 'payment_proof') {
+            textSpan.classList.add('payment-proof-message');
+            contentDiv.classList.add('payment-proof-content');
+
+            // Agregar la imagen del comprobante
+            const imageContainer = document.createElement('div');
+            imageContainer.className = 'payment-proof-image';
+            
+            const image = document.createElement('img');
+            image.src = message.imageData;
+            image.alt = 'Comprobante de pago';
+            image.style.maxWidth = '300px';
+            image.style.borderRadius = '8px';
+            image.style.marginBottom = '10px';
+            
+            imageContainer.appendChild(image);
+            contentDiv.appendChild(imageContainer);
+
+            // Agregar texto descriptivo
+            textSpan.textContent = message.content;
+        } else if (message.type === 'charge') {
             textSpan.classList.add('charge-message');
             contentDiv.classList.add('charge-content');
 

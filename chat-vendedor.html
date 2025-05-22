@@ -313,6 +313,33 @@
         }
 
         /* Estilos para mensajes de cobro */
+        .payment-proof-message {
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .payment-proof-content {
+            background-color: var(--incoming-bg);
+            padding: 12px;
+            border-radius: 8px;
+        }
+
+        .payment-proof-image {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 8px;
+        }
+
+        .payment-proof-image img {
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            transition: transform 0.2s;
+            cursor: pointer;
+        }
+
+        .payment-proof-image img:hover {
+            transform: scale(1.02);
+        }
+
         .charge-message {
             font-weight: 500;
             color: var(--whatsapp-light-green);
