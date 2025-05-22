@@ -303,12 +303,15 @@ async function openChat(requestId) {
             .onSnapshot(snapshot => {
                 if (snapshot.metadata.hasPendingWrites) return;
                 
-                snapshot.docChanges().forEach(change => {
-                    if (change.type === 'added') {
-                        appendMessage(change.doc.data());
-                        scrollToBottom();
-                    }
+                // Limpiar mensajes anteriores
+                messagesContainer.innerHTML = '';
+                
+                // Agregar todos los mensajes ordenados
+                snapshot.docs.forEach(doc => {
+                    appendMessage(doc.data());
                 });
+                
+                scrollToBottom();
             });
 
     } catch (error) {
@@ -380,9 +383,17 @@ async function appendMessage(message) {
     try {
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${message.userId === currentUser.uid ? 'outgoing' : 'incoming'}`;
+        messageDiv.dataset.timestamp = message.createdAt?.seconds || Date.now() / 1000;
 
         const contentDiv = document.createElement('div');
         contentDiv.className = 'message-content';
+
+        // Encontrar la posición correcta para insertar el mensaje
+        const messages = Array.from(messagesContainer.children);
+        const index = messages.findIndex(msg => {
+            const timestamp = parseFloat(msg.dataset.timestamp);
+            return timestamp > parseFloat(messageDiv.dataset.timestamp);
+        });
 
         const textSpan = document.createElement('span');
         textSpan.className = 'message-text';
@@ -395,11 +406,21 @@ async function appendMessage(message) {
             image.alt = 'Imagen';
             image.style.maxWidth = '300px';
             image.style.borderRadius = '8px';
+            
+            const timeSpan = document.createElement('span');
+            timeSpan.className = 'timestamp';
+            timeSpan.textContent = formatDate(message.createdAt);
+            
             imageContainer.appendChild(image);
             contentDiv.appendChild(imageContainer);
             contentDiv.appendChild(timeSpan);
             messageDiv.appendChild(contentDiv);
-            return;
+
+            if (index === -1) {
+                messagesContainer.appendChild(messageDiv);
+            } else {
+                messagesContainer.insertBefore(messageDiv, messages[index]);
+            }
         } else if (message.type === 'payment_proof') {
             textSpan.classList.add('payment-proof-message');
             contentDiv.classList.add('payment-proof-content');
@@ -416,6 +437,27 @@ async function appendMessage(message) {
             image.style.marginBottom = '10px';
             
             imageContainer.appendChild(image);
+            
+            const timeSpan = document.createElement('span');
+            timeSpan.className = 'timestamp';
+            timeSpan.textContent = formatDate(message.createdAt);
+            
+            contentDiv.appendChild(imageContainer);
+            contentDiv.appendChild(timeSpan);
+            messageDiv.appendChild(contentDiv);
+
+            // Encontrar la posición correcta para insertar el mensaje
+            const messages = Array.from(messagesContainer.children);
+            const index = messages.findIndex(msg => {
+                const timestamp = parseFloat(msg.dataset.timestamp);
+                return timestamp > parseFloat(messageDiv.dataset.timestamp);
+            });
+
+            if (index === -1) {
+                messagesContainer.appendChild(messageDiv);
+            } else {
+                messagesContainer.insertBefore(messageDiv, messages[index]);
+            }
             contentDiv.appendChild(imageContainer);
 
             // Agregar texto descriptivo
