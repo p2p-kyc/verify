@@ -174,16 +174,20 @@ function createCampaignCard(id, campaign) {
 
 async function approveCampaign(campaignId) {
     try {
+        // Aprobar tanto la campaña como el pago
         await window.db.collection('campaigns').doc(campaignId).update({
             status: 'active',
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            paymentStatus: 'approved',
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            paymentApprovedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            paymentApprovedBy: window.currentUser.uid
         });
 
         // Add activity log
         await window.db.collection('activity').add({
             type: 'campaign',
-            title: 'Campaign Approved',
-            description: `Campaign ${campaignId} has been approved`,
+            title: 'Campaign and Payment Approved',
+            description: `Campaign ${campaignId} and its payment have been approved`,
             timestamp: firebase.firestore.FieldValue.serverTimestamp()
         });
 
