@@ -410,19 +410,157 @@
     background-color: var(--dark-surface-light);
 }
 
-/* Table styles */
-.table-container {
-    background: var(--surface-color);
-    border-radius: 8px;
-    padding: 1rem;
-    margin-top: 1rem;
-    box-shadow: var(--shadow-sm);
-    overflow-x: auto;
+.data-table td:first-child,
+.data-table th:first-child {
+    padding-left: 1.5rem;
 }
 
-/* DataTables customization */
-.dataTables_wrapper {
-    padding: 1rem 0;
+.data-table td:last-child,
+.data-table th:last-child {
+    padding-right: 1.5rem;
+}
+
+/* Status Badge */
+.status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.status-pending {
+    background-color: var(--warning-color-light);
+    color: var(--warning-color);
+}
+
+.status-approved {
+    background-color: var(--success-color-light);
+    color: var(--success-color);
+}
+
+.status-rejected {
+    background-color: var(--error-color-light);
+    color: var(--error-color);
+}
+
+/* Action Buttons */
+.action-btn {
+    padding: 0.5rem;
+    border-radius: 4px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-color);
+    transition: all 0.2s;
+}
+
+.action-btn:hover {
+    background-color: var(--surface-color-hover);
+}
+
+.action-btn.approve {
+    color: var(--success-color);
+}
+
+.action-btn.reject {
+    color: var(--error-color);
+}
+
+.action-btn i {
+    font-size: 1.25rem;
+}
+
+/* Amount Column */
+.amount-cell {
+    font-family: monospace;
+    font-weight: 600;
+}
+
+/* ID Column */
+.id-cell {
+    font-family: monospace;
+    color: var(--text-color-light);
+    font-size: 0.875rem;
+}
+
+/* Empty and Error States */
+.empty-state,
+.error-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    color: var(--text-color-light);
+}
+
+.empty-state i,
+.error-state i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+.empty-state p,
+.error-state p {
+    font-size: 1rem;
+    margin: 0;
+}
+
+.error-state {
+    color: var(--error-color);
+}
+
+.text-center {
+    text-align: center;
+}
+
+.text-error {
+    color: var(--error-color);
+}
+
+/* Pagination */
+.pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 2rem;
+    padding: 1rem;
+}
+
+.page-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border: none;
+    border-radius: 0.5rem;
+    background: var(--surface-color);
+    color: var(--text-color);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.page-button:hover:not(:disabled) {
+    background: var(--surface-color-hover);
+}
+
+.page-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.page-button i {
+    font-size: 1.25rem;
+}
+
+#pageInfo {
+    font-size: 0.875rem;
+    color: var(--text-color-light);
+    min-width: 8rem;
+    text-align: center;
 }
 
 .dataTables_filter input,

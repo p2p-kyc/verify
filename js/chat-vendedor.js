@@ -490,6 +490,15 @@ async function requestPayment() {
 
         // Crear referencia para la solicitud de pago
         const paymentRequestRef = window.db.collection('payment_requests').doc();
+        
+        // Agregar datos adicionales al payment request
+        paymentRequest.campaignId = activeRequest.campaign.id;
+        paymentRequest.requestId = activeRequest.id;
+        paymentRequest.buyerId = activeRequest.userId;
+        paymentRequest.sellerId = currentUser.uid;
+        paymentRequest.status = 'pending';
+        paymentRequest.createdAt = window.firebase.firestore.FieldValue.serverTimestamp();
+        
         batch.set(paymentRequestRef, paymentRequest);
 
         // Crear mensaje de cobro

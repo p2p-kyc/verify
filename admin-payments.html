@@ -55,6 +55,10 @@
             <header class="content-header">
                 <h1>Payment Management</h1>
                 <div class="header-actions">
+                    <div class="search-box">
+                        <i class='bx bx-search'></i>
+                        <input type="text" placeholder="Search payments..." id="paymentSearch">
+                    </div>
                     <button id="refreshBtn" class="action-button">
                         <i class='bx bx-refresh'></i>
                         Refresh
@@ -64,10 +68,6 @@
 
             <!-- Filters -->
             <div class="filters-section">
-                <div class="search-box">
-                    <i class='bx bx-search'></i>
-                    <input type="text" id="paymentSearch" placeholder="Search payments...">
-                </div>
                 <div class="filter-group">
                     <select id="dateFilter">
                         <option value="all">All Dates</option>
@@ -85,31 +85,32 @@
                     <select id="sortOrder">
                         <option value="newest">Newest First</option>
                         <option value="oldest">Oldest First</option>
-                        <option value="amount">Highest Amount</option>
                     </select>
                 </div>
             </div>
 
-            <!-- Payment Requests Table -->
-            <div class="table-container">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Request ID</th>
-                            <th>Campaign</th>
-                            <th>Seller</th>
-                            <th>Buyer</th>
-                            <th>Accounts</th>
-                            <th>Amount</th>
-                            <th>Status</th>
-                            <th>Created At</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="paymentRequestsList">
-                        <!-- Payment requests will be loaded here -->
-                    </tbody>
-                </table>
+            <!-- Payments Table -->
+            <div class="admin-content">
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Request ID</th>
+                                <th>Campaign</th>
+                                <th>Seller</th>
+                                <th>Buyer</th>
+                                <th>Accounts</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                                <th>Created At</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="paymentsList">
+                            <!-- Los pagos se cargarán aquí dinámicamente -->
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             <!-- Pagination -->
