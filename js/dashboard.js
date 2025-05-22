@@ -566,12 +566,6 @@ function createCampaignCard(id, campaign) {
                         <i class='bx ${isSaved ? 'bx-bookmark-heart' : 'bx-bookmark'}'></i>
                         <span>${isSaved ? 'Saved' : 'Save'}</span>
                     </button>
-                    ${!ownerStatus && isActive ? `
-                        <button class="join-btn" onclick="joinCampaign('${sanitize(id)}')">
-                            <i class='bx bx-right-arrow-alt'></i>
-                            <span>Join</span>
-                        </button>
-                    ` : ''}
                     <button class="view-btn" onclick="viewCampaign('${sanitize(id)}')">
                         <i class='bx bx-show'></i>
                         <span>View</span>
@@ -829,8 +823,14 @@ async function viewCampaign(id) {
         const campaign = { id: campaignDoc.id, ...campaignDoc.data() };
         const isCreator = campaign.createdBy === window.currentUser.uid;
 
+        // Verificar si la campaña está aprobada por el administrador
+        if (campaign.status !== 'active') {
+            showToast('Esta campaña no está aprobada por el administrador', 'error');
+            return;
+        }
+
         if (isCreator) {
-            // Buscar solicitudes existentes para esta campaña
+            // El vendedor accede al chat si la campaña está aprobada
             const requestsSnapshot = await window.db.collection('requests')
                 .where('campaignId', '==', id)
                 .where('status', '==', 'approved')
@@ -841,7 +841,7 @@ async function viewCampaign(id) {
                 return;
             }
 
-            // Tomar la primera solicitud (podríamos agregar lógica para seleccionar una específica)
+            // Tomar la primera solicitud
             const requestDoc = requestsSnapshot.docs[0];
             window.location.href = `chat-comprador.html?requestId=${requestDoc.id}`;
         } else {
