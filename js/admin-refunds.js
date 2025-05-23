@@ -199,11 +199,14 @@ document.getElementById('refundProofForm').addEventListener('submit', async func
             throw new Error('Por favor selecciona una imagen');
         }
 
-        // Subir imagen a Firebase Storage
-        const storageRef = storage.ref();
-        const refundProofRef = storageRef.child(`refund_proofs/${currentRefundId}_${Date.now()}`);
-        await refundProofRef.put(file);
-        const imageUrl = await refundProofRef.getDownloadURL();
+        // Convertir imagen a base64
+        const reader = new FileReader();
+        const base64Promise = new Promise((resolve, reject) => {
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = () => reject(reader.error);
+        });
+        reader.readAsDataURL(file);
+        const imageUrl = await base64Promise;
 
         // Actualizar reembolso con el comprobante
         await completeRefundWithProof(currentRefundId, imageUrl);
