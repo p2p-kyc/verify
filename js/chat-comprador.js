@@ -247,10 +247,18 @@ async function openChat(requestId) {
         // Obtener datos del vendedor
         const sellerData = await getUserData(requestData.userId);
         
+        // Obtener cuentas cobradas
+        const cuentasCobradas = await getCuentasCobradas(campaignDoc.id);
+        const cuentasDisponibles = campaign.accountCount - cuentasCobradas;
+
         // Mostrar información del chat
         document.getElementById('chatTitle').textContent = sellerData.name || sellerData.email;
         document.getElementById('campaignInfo').innerHTML = `
             <p>${campaign.name} - ${campaign.status}</p>
+            <div class="campaign-accounts">
+                <p>Cuentas cobradas: ${cuentasCobradas} de ${campaign.accountCount}</p>
+                <p>Cuentas disponibles: ${cuentasDisponibles}</p>
+            </div>
         `;
 
         // Configurar botón de terminar campaña
@@ -448,10 +456,6 @@ async function handlePayment(paymentRequestId, response) {
             respondedAt: window.firebase.firestore.FieldValue.serverTimestamp()
         });
 
-        // Actualizar estado de la campaña
-        await window.db.collection('campaigns').doc(paymentRequestData.campaignId).update({
-            status: response === 'approved' ? 'processing_payment' : 'active'
-        });
 
         // Crear mensaje de respuesta
         const message = {
@@ -502,4 +506,33 @@ function formatDate(timestamp) {
 // Scroll al último mensaje
 function scrollToBottom() {
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+// Obtener el número de cuentas cobradas para una campaña
+async function getCuentasCobradas(campaignId) {
+    try {
+        const paymentRequests = await window.db.collection('payment_requests')
+            .where('campaignId', '==', campaignId)
+            .where('status', '==', 'completed')
+            .get()
+            .catch(error => {
+                console.error('Error al obtener payment requests:', error);
+                return { empty: true };
+            });
+
+        if (!paymentRequests || paymentRequests.empty) return 0;
+
+        let totalCuentasCobradas = 0;
+        paymentRequests.forEach(doc => {
+            const data = doc.data();
+            if (data && typeof data.accountsRequested === 'number') {
+                totalCuentasCobradas += data.accountsRequested;
+            }
+        });
+
+        return totalCuentasCobradas;
+    } catch (error) {
+        console.error('Error al obtener cuentas cobradas:', error);
+        return 0;
+    }
 }

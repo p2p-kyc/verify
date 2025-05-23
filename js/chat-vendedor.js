@@ -283,9 +283,17 @@ async function openChat(requestId) {
         
         // Mostrar información del chat
         document.getElementById('chatTitle').textContent = userData.name || userData.email;
+        // Obtener cuentas cobradas
+        const cuentasCobradas = await getCuentasCobradas(campaignDoc.id);
+        const cuentasDisponibles = campaignData.accountCount - cuentasCobradas;
+
         document.getElementById('campaignInfo').innerHTML = `
             <span class="campaign-title">${campaignData.name}</span>
             <span class="campaign-status ${campaignData.status}">${formatStatus(campaignData.status)}</span>
+            <div class="campaign-accounts">
+                <span>Cuentas cobradas: ${cuentasCobradas} de ${campaignData.accountCount}</span>
+                <span>Disponibles: ${cuentasDisponibles}</span>
+            </div>
         `;
 
         // Crear botón de cobro
@@ -545,11 +553,19 @@ async function requestPayment() {
             throw new Error('El pago de la campaña no está aprobado');
         }
 
-        // Verificar estado de la campaña
-        if (campaignData.status !== 'active' && campaignData.status !== 'approved') {
-            console.error('Error de estado de campaña:', campaignData.status);
-            throw new Error('La campaña no está activa o aprobada');
+        // Verificar estado de la campaña y cuentas disponibles
+        const cuentasCobradas = await getCuentasCobradas(activeRequest.campaign.id);
+        const cuentasDisponibles = campaignData.accountCount - cuentasCobradas;
+        
+        if (cuentasDisponibles <= 0) {
+            throw new Error('No hay más cuentas disponibles para cobrar en esta campaña');
         }
+
+        console.log('Estado de cuentas:', {
+            total: campaignData.accountCount,
+            cobradas: cuentasCobradas,
+            disponibles: cuentasDisponibles
+        });
 
         // Mostrar el modal de cobro
         const modal = document.getElementById('chargeModal');
@@ -565,7 +581,7 @@ async function requestPayment() {
             // Manejar confirmación
             confirmBtn.onclick = async () => {
                 const accountsToCharge = parseInt(document.getElementById('accountsToCharge').value);
-                const availableAccounts = campaignData.accountCount - (campaignData.verificationCount || 0);
+                const availableAccounts = cuentasDisponibles;
 
                 if (accountsToCharge < 1 || accountsToCharge > availableAccounts) {
                     document.getElementById('accountValidation').textContent = 'Cantidad de cuentas inválida';
@@ -622,10 +638,17 @@ async function requestPayment() {
         // Crear referencia para la solicitud de pago
         const paymentRequestRef = window.db.collection('payment_requests').doc();
         
+        // Obtener el buyerId del request
+        const requestDoc = await window.db.collection('requests').doc(activeRequest.id).get();
+        if (!requestDoc.exists) {
+            throw new Error('Request no encontrado');
+        }
+        const requestData = requestDoc.data();
+        
         // Agregar datos adicionales al payment request
         paymentRequest.campaignId = activeRequest.campaign.id;
         paymentRequest.requestId = activeRequest.id;
-        paymentRequest.buyerId = activeRequest.userId;
+        paymentRequest.buyerId = requestData.userId; // Usar el userId del request
         paymentRequest.sellerId = currentUser.uid;
         paymentRequest.status = 'pending';
         paymentRequest.createdAt = window.firebase.firestore.FieldValue.serverTimestamp();
@@ -654,9 +677,8 @@ async function requestPayment() {
         const campaignRef = window.db.collection('campaigns')
             .doc(activeRequest.campaign.id);
         batch.update(campaignRef, {
-            status: 'pending_payment',
-            chargeRequestedAt: window.firebase.firestore.FieldValue.serverTimestamp(),
-            currentPaymentRequest: paymentRequestRef.id
+            lastPaymentRequestAt: window.firebase.firestore.FieldValue.serverTimestamp(),
+            lastPaymentRequestId: paymentRequestRef.id
         });
 
         // Ejecutar todas las operaciones en una transacción
@@ -711,10 +733,7 @@ async function handlePaymentResponse(paymentRequestId, response) {
             respondedAt: window.firebase.firestore.FieldValue.serverTimestamp()
         });
 
-        // Actualizar estado de la campaña
-        await window.db.collection('campaigns').doc(paymentRequestData.campaignId).update({
-            status: response === 'approved' ? 'processing_payment' : 'active'
-        });
+        // No actualizamos el estado de la campaña para mantenerla aprobada
 
         // Crear mensaje de respuesta
         const message = {
@@ -744,8 +763,7 @@ async function handlePaymentResponse(paymentRequestId, response) {
 function formatStatus(status) {
     const statusMap = {
         'active': 'Activa',
-        'pending_payment': 'Pago pendiente',
-        'processing_payment': 'Procesando pago',
+        'approved': 'Aprobada',
         'completed': 'Completada',
         'cancelled': 'Cancelada'
     };
@@ -824,4 +842,33 @@ function closeChargeModal() {
 // Scroll al último mensaje
 function scrollToBottom() {
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+// Obtener el número de cuentas cobradas para una campaña
+async function getCuentasCobradas(campaignId) {
+    try {
+        const paymentRequests = await window.db.collection('payment_requests')
+            .where('campaignId', '==', campaignId)
+            .where('status', '==', 'completed')
+            .get()
+            .catch(error => {
+                console.error('Error al obtener payment requests:', error);
+                return { empty: true };
+            });
+
+        if (!paymentRequests || paymentRequests.empty) return 0;
+
+        let totalCuentasCobradas = 0;
+        paymentRequests.forEach(doc => {
+            const data = doc.data();
+            if (data && typeof data.accountsRequested === 'number') {
+                totalCuentasCobradas += data.accountsRequested;
+            }
+        });
+
+        return totalCuentasCobradas;
+    } catch (error) {
+        console.error('Error al obtener cuentas cobradas:', error);
+        return 0;
+    }
 }

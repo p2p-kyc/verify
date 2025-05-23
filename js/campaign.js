@@ -94,8 +94,14 @@ async function loadCampaignDetails() {
                 id: doc.id,
                 createdBy: data.createdBy,
                 currentUser: user.uid,
-                isOwner: data.createdBy === user.uid
+                isOwner: data.createdBy === user.uid,
+                status: data.status
             });
+            
+            // Verificar si la campaña está aprobada o activa
+            if (!data.status || (data.status !== 'active' && data.status !== 'approved')) {
+                throw new Error('Esta campaña no está aprobada por el administrador');
+            }
             
             // Update campaign state
             campaign = { id: doc.id, ...data };

@@ -194,13 +194,7 @@ async function completePaymentWithProof(paymentId, imageUrl) {
             }
         });
 
-        // Update campaign status
-        batch.update(campaignRef, {
-            status: 'active',
-            paymentStatus: 'completed',
-            paymentCompletedAt: firebase.firestore.FieldValue.serverTimestamp(),
-            paymentCompletedBy: window.currentUser.uid
-        });
+        
 
         // Add to transaction history
         const transactionRef = window.db.collection('transactions').doc();
