@@ -446,6 +446,63 @@
             opacity: 0.9;
             transform: scale(1.02);
         }
+
+        /* Estilos para la información de la campaña */
+        .campaign-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 4px;
+        }
+
+        .campaign-name {
+            font-size: 0.9rem;
+            color: var(--text-primary);
+        }
+
+        .campaign-status {
+            font-size: 0.8rem;
+            padding: 2px 8px;
+            border-radius: 12px;
+            text-transform: capitalize;
+        }
+
+        .campaign-status.active {
+            background-color: var(--whatsapp-light-green);
+            color: white;
+        }
+
+        .campaign-status.completed {
+            background-color: #2196f3;
+            color: white;
+        }
+
+        .campaign-status.cancelled {
+            background-color: #f44336;
+            color: white;
+        }
+
+        .campaign-stats {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .stat-item i {
+            font-size: 1rem;
+        }
+
+        .separator {
+            color: var(--text-secondary);
+        }
     </style>
 </head>
 <body>

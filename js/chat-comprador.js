@@ -254,10 +254,20 @@ async function openChat(requestId) {
         // Mostrar información del chat
         document.getElementById('chatTitle').textContent = sellerData.name || sellerData.email;
         document.getElementById('campaignInfo').innerHTML = `
-            <p>${campaign.name} - ${campaign.status}</p>
-            <div class="campaign-accounts">
-                <p>Cuentas cobradas: ${cuentasCobradas} de ${campaign.accountCount}</p>
-                <p>Cuentas disponibles: ${cuentasDisponibles}</p>
+            <div class="campaign-header">
+                <span class="campaign-name">${campaign.name}</span>
+                <span class="campaign-status ${campaign.status}">${formatStatus(campaign.status)}</span>
+            </div>
+            <div class="campaign-stats">
+                <span class="stat-item">
+                    <i class='bx bx-check-circle'></i>
+                    <span class="approved-accounts">${cuentasCobradas}</span>
+                </span>
+                <span class="separator">·</span>
+                <span class="stat-item">
+                    <i class='bx bx-wallet'></i>
+                    <span class="available-accounts">${cuentasDisponibles}</span>
+                </span>
             </div>
         `;
 
@@ -492,14 +502,24 @@ async function getUserData(userId) {
     }
 }
 
+// Formatear estado de la campaña
+function formatStatus(status) {
+    const statusMap = {
+        'active': 'Activa',
+        'completed': 'Completada',
+        'cancelled': 'Cancelada'
+    };
+    return statusMap[status] || status;
+}
+
 // Formatear fecha
 function formatDate(timestamp) {
     if (!timestamp) return '';
+
     const date = timestamp.toDate();
-    return date.toLocaleString('es-ES', {
+    return date.toLocaleTimeString('es-ES', {
         hour: '2-digit',
-        minute: '2-digit',
-        hour12: true
+        minute: '2-digit'
     });
 }
 
