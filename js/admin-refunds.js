@@ -5,14 +5,14 @@ let currentRefundId = null;
 // Cargar reembolsos
 async function loadRefunds() {
     try {
-        const refundsSnapshot = await window.db.collection('refund_requests')
+        const snapshot = await db.collection('refund_requests')
             .orderBy('createdAt', 'desc')
             .get();
 
         const refundsContainer = document.getElementById('refundsList');
         refundsContainer.innerHTML = '';
 
-        if (refundsSnapshot.empty) {
+        if (snapshot.empty) {
             refundsContainer.innerHTML = `
                 <tr>
                     <td colspan="7" class="text-center">
@@ -26,7 +26,7 @@ async function loadRefunds() {
             return;
         }
 
-        for (const doc of refundsSnapshot.docs) {
+        for (const doc of snapshot.docs) {
             const refund = doc.data();
             const row = createRefundRow(doc.id, refund);
             refundsContainer.appendChild(row);
@@ -90,7 +90,7 @@ async function approveRefund(refundId) {
         }
 
         // Obtener datos del reembolso
-        const refundDoc = await window.db.collection('refund_requests').doc(refundId).get();
+        const refundDoc = await db.collection('refund_requests').doc(refundId).get();
         if (!refundDoc.exists) {
             throw new Error('Reembolso no encontrado');
         }
@@ -101,10 +101,10 @@ async function approveRefund(refundId) {
         }
 
         // Actualizar estado del reembolso
-        await window.db.collection('refund_requests').doc(refundId).update({
+        await db.collection('refund_requests').doc(refundId).update({
             status: 'approved',
-            approvedAt: window.firebase.firestore.FieldValue.serverTimestamp(),
-            approvedBy: window.auth.currentUser.uid
+            approvedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            approvedBy: auth.currentUser.uid
         });
 
         // Recargar reembolsos
@@ -124,7 +124,7 @@ async function rejectRefund(refundId) {
         }
 
         // Obtener datos del reembolso
-        const refundDoc = await window.db.collection('refund_requests').doc(refundId).get();
+        const refundDoc = await db.collection('refund_requests').doc(refundId).get();
         if (!refundDoc.exists) {
             throw new Error('Reembolso no encontrado');
         }
@@ -135,10 +135,10 @@ async function rejectRefund(refundId) {
         }
 
         // Actualizar estado del reembolso
-        await window.db.collection('refund_requests').doc(refundId).update({
+        await db.collection('refund_requests').doc(refundId).update({
             status: 'rejected',
-            rejectedAt: window.firebase.firestore.FieldValue.serverTimestamp(),
-            rejectedBy: window.auth.currentUser.uid
+            rejectedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            rejectedBy: auth.currentUser.uid
         });
 
         // Recargar reembolsos
@@ -200,7 +200,7 @@ document.getElementById('refundProofForm').addEventListener('submit', async func
         }
 
         // Subir imagen a Firebase Storage
-        const storageRef = window.storage.ref();
+        const storageRef = storage.ref();
         const refundProofRef = storageRef.child(`refund_proofs/${currentRefundId}_${Date.now()}`);
         await refundProofRef.put(file);
         const imageUrl = await refundProofRef.getDownloadURL();
@@ -222,7 +222,7 @@ document.getElementById('refundProofForm').addEventListener('submit', async func
 async function completeRefundWithProof(refundId, imageUrl) {
     try {
         // Obtener datos del reembolso
-        const refundDoc = await window.db.collection('refund_requests').doc(refundId).get();
+        const refundDoc = await db.collection('refund_requests').doc(refundId).get();
         if (!refundDoc.exists) {
             throw new Error('Reembolso no encontrado');
         }
@@ -230,19 +230,20 @@ async function completeRefundWithProof(refundId, imageUrl) {
         const refundData = refundDoc.data();
         
         // Actualizar reembolso
-        await window.db.collection('refund_requests').doc(refundId).update({
+        await db.collection('refund_requests').doc(refundId).update({
             status: 'completed',
-            completedAt: window.firebase.firestore.FieldValue.serverTimestamp(),
-            completedBy: window.auth.currentUser.uid,
+            completedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            completedBy: auth.currentUser.uid,
             proofUrl: imageUrl
         });
 
         // Actualizar estado de la campaña
         if (refundData.campaignId) {
-            await window.db.collection('campaigns').doc(refundData.campaignId).update({
+            const campaignDoc = await db.collection('campaigns').doc(refundData.campaignId).get();
+            await db.collection('campaigns').doc(refundData.campaignId).update({
                 status: 'cancelled',
-                cancelledAt: window.firebase.firestore.FieldValue.serverTimestamp(),
-                cancelledBy: window.auth.currentUser.uid
+                cancelledAt: firebase.firestore.FieldValue.serverTimestamp(),
+                cancelledBy: auth.currentUser.uid
             });
         }
 
@@ -253,10 +254,10 @@ async function completeRefundWithProof(refundId, imageUrl) {
                 text: 'Comprobante de reembolso',
                 imageUrl: imageUrl,
                 userId: window.auth.currentUser.uid,
-                createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
             };
 
-            await window.db.collection('requests')
+            await db.collection('requests')
                 .doc(refundData.requestId)
                 .collection('messages')
                 .add(message);
@@ -268,30 +269,58 @@ async function completeRefundWithProof(refundId, imageUrl) {
     }
 }
 
-// Inicializar página
-window.auth.onAuthStateChanged(async (user) => {
-    if (user) {
-        // Verificar si es admin
-        const userDoc = await window.db.collection('users').doc(user.uid).get();
-        const userData = userDoc.data();
-        
-        if (!userData || userData.role !== 'admin') {
+// Check if user is admin
+async function checkAdmin() {
+    try {
+        // Esperar a que la autenticación se complete
+        await new Promise((resolve) => {
+            const unsubscribe = auth.onAuthStateChanged((user) => {
+                unsubscribe();
+                resolve(user);
+            });
+        });
+
+        if (!auth.currentUser) {
+            console.error('No user logged in');
             window.location.href = 'index.html';
             return;
         }
 
-        currentUser = user;
-        loadRefunds();
+        const userDoc = await db.collection('users').doc(auth.currentUser.uid).get();
+        console.log('User doc:', userDoc.data());
 
-        // Event listeners
-        document.getElementById('refreshBtn').addEventListener('click', loadRefunds);
-        document.getElementById('refundSearch').addEventListener('input', handleSearch);
-        document.getElementById('dateFilter').addEventListener('change', handleFilters);
-        document.getElementById('statusFilter').addEventListener('change', handleFilters);
-        document.getElementById('sortOrder').addEventListener('change', handleFilters);
-    } else {
+        if (!userDoc.exists) {
+            console.error('User document does not exist');
+            window.location.href = 'index.html';
+            return;
+        }
+
+        if (userDoc.data().role !== 'admin') {
+            console.error('User is not admin');
+            window.location.href = 'index.html';
+            return;
+        }
+
+        console.log('Admin check passed');
+    } catch (error) {
+        console.error('Error checking admin status:', error);
         window.location.href = 'index.html';
     }
+}
+
+// Inicializar página
+document.addEventListener('DOMContentLoaded', () => {
+    checkAdmin();
+    
+    // Event listeners
+    document.getElementById('refreshBtn').addEventListener('click', loadRefunds);
+    document.getElementById('refundSearch').addEventListener('input', handleSearch);
+    document.getElementById('dateFilter').addEventListener('change', handleFilters);
+    document.getElementById('statusFilter').addEventListener('change', handleFilters);
+    document.getElementById('sortOrder').addEventListener('change', handleFilters);
+    
+    // Cargar reembolsos iniciales
+    loadRefunds();
 });
 
 // Búsqueda y filtros
