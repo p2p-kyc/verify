@@ -11,37 +11,81 @@ const sendButton = document.getElementById('sendButton');
 const headerActions = document.getElementById('headerActions');
 
 // Función para crear el botón de cobro
-function createChargeButton(campaign) {
-    console.log('Creando botón de cobro con campaña:', campaign);
-    // Limpiar botón anterior si existe
-    headerActions.innerHTML = '';
+async function createChargeButton(campaign) {
+    try {
+        console.log('Creando botón de cobro con campaña:', campaign);
+        
+        // Validar campaña
+        if (!campaign || !campaign.id) {
+            throw new Error('Campaña inválida');
+        }
 
-    // Crear nuevo botón
-    const button = document.createElement('button');
-    button.className = 'action-button';
-    button.title = 'Cobrar cuenta';
-    button.innerHTML = `
-        <i class='bx bx-dollar'></i>
-        <span>Cobrar cuenta</span>
-    `;
+        // Obtener datos actualizados de la campaña
+        const campaignDoc = await window.db.collection('campaigns').doc(campaign.id).get();
+        if (!campaignDoc.exists) {
+            throw new Error('La campaña no existe');
+        }
 
-    // Configurar el estado del botón
-    const isActive = campaign?.status === 'active';
-    console.log('Estado de la campaña:', campaign?.status);
-    console.log('Botón estará:', isActive ? 'activo' : 'inactivo');
-    
-    if (!isActive) {
-        button.title = 'La campaña no está activa';
-        button.style.opacity = '0.7';
-        button.style.cursor = 'not-allowed';
+        const campaignData = campaignDoc.data();
+        if (!campaignData || typeof campaignData.accountCount !== 'number') {
+            throw new Error('Datos de campaña inválidos');
+        }
+
+        // Limpiar botón anterior si existe
+        if (headerActions) {
+            headerActions.innerHTML = '';
+        }
+
+        // Obtener cuentas cobradas
+        const cuentasCobradas = await getCuentasCobradas(campaign.id);
+        if (typeof cuentasCobradas !== 'number') {
+            throw new Error('Error al obtener cuentas cobradas');
+        }
+
+        const cuentasDisponibles = campaignData.accountCount - cuentasCobradas;
+
+        // Crear nuevo botón
+        const button = document.createElement('button');
+        button.className = 'action-button';
+
+        // Verificar estado de la campaña y cuentas disponibles
+        const isActive = campaignData.status === 'active';
+        const hasCuentasDisponibles = cuentasDisponibles > 0;
+
+        if (!isActive || !hasCuentasDisponibles) {
+            button.disabled = true;
+            button.title = !isActive ? 'La campaña no está activa' : 'No hay cuentas disponibles';
+            button.style.opacity = '0.7';
+            button.style.cursor = 'not-allowed';
+            button.innerHTML = `
+                <i class='bx bx-dollar'></i>
+                <span>${!isActive ? 'Campaña ' + campaignData.status : 'Sin cuentas disponibles'}</span>
+            `;
+        } else {
+            button.title = 'Solicitar cobro';
+            button.innerHTML = `
+                <i class='bx bx-dollar'></i>
+                <span>Cobrar cuenta (${cuentasDisponibles} disponibles)</span>
+            `;
+            // Agregar evento click solo si está activo y hay cuentas
+            button.addEventListener('click', requestPayment);
+        }
+
+        // Agregar al contenedor
+        headerActions.appendChild(button);
+        return button;
+    } catch (error) {
+        console.error('Error al crear botón de cobro:', error);
+        // Mostrar mensaje de error al usuario
+        if (headerActions) {
+            headerActions.innerHTML = '';
+            const errorMsg = document.createElement('div');
+            errorMsg.className = 'alert alert-danger';
+            errorMsg.textContent = 'Error: ' + error.message;
+            headerActions.appendChild(errorMsg);
+        }
+        return null;
     }
-
-    // Agregar evento click
-    button.addEventListener('click', requestPayment);
-
-    // Agregar al contenedor
-    headerActions.appendChild(button);
-    return button;
 }
 
 // Event listeners
@@ -283,22 +327,46 @@ async function openChat(requestId) {
         
         // Mostrar información del chat
         document.getElementById('chatTitle').textContent = userData.name || userData.email;
-        // Obtener cuentas cobradas
+        // Obtener cuentas cobradas y actualizar información
         const cuentasCobradas = await getCuentasCobradas(campaignDoc.id);
         const cuentasDisponibles = campaignData.accountCount - cuentasCobradas;
 
-        document.getElementById('campaignInfo').innerHTML = `
-            <span class="campaign-title">${campaignData.name}</span>
-            <span class="campaign-status ${campaignData.status}">${formatStatus(campaignData.status)}</span>
-            <div class="campaign-accounts">
-                <span>Cuentas cobradas: ${cuentasCobradas} de ${campaignData.accountCount}</span>
-                <span>Disponibles: ${cuentasDisponibles}</span>
+        // Verificar si la campaña debe estar completada
+        if (cuentasCobradas >= campaignData.accountCount && campaignData.status !== 'completed') {
+            await window.db.collection('campaigns').doc(campaignDoc.id).update({
+                status: 'completed',
+                completedAt: window.firebase.firestore.FieldValue.serverTimestamp()
+            });
+            campaignData.status = 'completed';
+        }
+
+        // Actualizar información de la campaña
+        const campaignInfo = document.getElementById('campaignInfo');
+        campaignInfo.innerHTML = `
+            <div class="campaign-header">
+                <span class="campaign-name">${campaignData.name}</span>
+                <span class="campaign-status ${campaignData.status}">${formatStatus(campaignData.status)}</span>
+            </div>
+            <div class="campaign-stats">
+                <span class="stat-item">
+                    <i class='bx bx-check-circle'></i>
+                    <span class="approved-accounts">${cuentasCobradas}</span>
+                </span>
+                <span class="separator">·</span>
+                <span class="stat-item">
+                    <i class='bx bx-wallet'></i>
+                    <span class="available-accounts">${cuentasDisponibles}</span>
+                </span>
             </div>
         `;
 
         // Crear botón de cobro
         console.log('Datos de la campaña antes de crear botón:', campaignData);
-        createChargeButton(campaignData);
+        const campaign = {
+            id: campaignDoc.id,
+            ...campaignData
+        };
+        createChargeButton(campaign);
 
         // Limpiar mensajes anteriores
         messagesContainer.innerHTML = '';
@@ -733,6 +801,47 @@ async function handlePaymentResponse(paymentRequestId, response) {
             respondedAt: window.firebase.firestore.FieldValue.serverTimestamp()
         });
 
+        // Si el pago fue aprobado, actualizar el contador y verificar si la campaña debe finalizar
+        if (response === 'approved') {
+            const cuentasCobradas = await getCuentasCobradas(paymentRequestData.campaignId);
+            const campaignDoc = await window.db.collection('campaigns').doc(paymentRequestData.campaignId).get();
+            const campaignData = campaignDoc.data();
+            const cuentasDisponibles = campaignData.accountCount - cuentasCobradas;
+
+            // Actualizar UI
+            const campaignInfo = document.getElementById('campaignInfo');
+            if (campaignInfo) {
+                campaignInfo.innerHTML = `
+                    <div class="campaign-header">
+                        <span class="campaign-name">${campaignData.name}</span>
+                        <span class="campaign-status ${campaignData.status}">${formatStatus(campaignData.status)}</span>
+                    </div>
+                    <div class="campaign-stats">
+                        <span class="stat-item">
+                            <i class='bx bx-check-circle'></i>
+                            <span class="approved-accounts">${cuentasCobradas}</span>
+                        </span>
+                        <span class="separator">·</span>
+                        <span class="stat-item">
+                            <i class='bx bx-wallet'></i>
+                            <span class="available-accounts">${cuentasDisponibles}</span>
+                        </span>
+                    </div>
+                `;
+            }
+
+            // Si se alcanzó el número de cuentas, finalizar la campaña
+            if (cuentasCobradas >= campaignData.accountCount) {
+                await window.db.collection('campaigns').doc(paymentRequestData.campaignId).update({
+                    status: 'completed',
+                    completedAt: window.firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                // Notificar al usuario
+                alert('¡La campaña ha sido completada! Se han cobrado todas las cuentas.');
+            }
+        }
+
         // No actualizamos el estado de la campaña para mantenerla aprobada
 
         // Crear mensaje de respuesta
@@ -847,9 +956,15 @@ function scrollToBottom() {
 // Obtener el número de cuentas cobradas para una campaña
 async function getCuentasCobradas(campaignId) {
     try {
+        if (!campaignId) {
+            console.error('Error: campaignId es undefined en getCuentasCobradas');
+            return 0;
+        }
+
+        // Obtener todas las solicitudes de pago aprobadas
         const paymentRequests = await window.db.collection('payment_requests')
             .where('campaignId', '==', campaignId)
-            .where('status', '==', 'completed')
+            .where('status', '==', 'approved')
             .get()
             .catch(error => {
                 console.error('Error al obtener payment requests:', error);
@@ -861,8 +976,12 @@ async function getCuentasCobradas(campaignId) {
         let totalCuentasCobradas = 0;
         paymentRequests.forEach(doc => {
             const data = doc.data();
-            if (data && typeof data.accountsRequested === 'number') {
-                totalCuentasCobradas += data.accountsRequested;
+            // Sumar el número de cuentas de cada solicitud aprobada
+            if (data && typeof data.accountCount === 'number') {
+                totalCuentasCobradas += data.accountCount;
+            } else {
+                // Si no hay accountCount, asumir 1 cuenta
+                totalCuentasCobradas += 1;
             }
         });
 
