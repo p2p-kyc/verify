@@ -554,9 +554,11 @@ async function getCuentasCobradas(campaignId) {
         if (approvedRequests && !approvedRequests.empty) {
             approvedRequests.forEach(doc => {
                 const data = doc.data();
-                if (data && typeof data.accountCount === 'number') {
-                    totalCuentasCobradas += data.accountCount;
+                if (data && typeof data.accountsRequested === 'number') {
+                    totalCuentasCobradas += data.accountsRequested;
+                    console.log('Cuentas aprobadas:', data.accountsRequested);
                 } else {
+                    console.warn('Solicitud sin accountsRequested:', doc.id);
                     totalCuentasCobradas += 1;
                 }
             });
@@ -566,9 +568,11 @@ async function getCuentasCobradas(campaignId) {
         if (paidRequests && !paidRequests.empty) {
             paidRequests.forEach(doc => {
                 const data = doc.data();
-                if (data && typeof data.accountCount === 'number') {
-                    totalCuentasCobradas += data.accountCount;
+                if (data && typeof data.accountsRequested === 'number') {
+                    totalCuentasCobradas += data.accountsRequested;
+                    console.log('Cuentas pagadas:', data.accountsRequested);
                 } else {
+                    console.warn('Solicitud sin accountsRequested:', doc.id);
                     totalCuentasCobradas += 1;
                 }
             });
