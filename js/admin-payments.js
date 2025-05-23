@@ -424,5 +424,39 @@ function filterAndDisplayPayments() {
     });
 }
 
+// Aprobar pago
+async function approvePayment(paymentId) {
+    try {
+        if (!confirm('¿Estás seguro de que deseas aprobar este pago?')) {
+            return;
+        }
+
+        // Obtener datos del pago
+        const paymentDoc = await window.db.collection('payment_requests').doc(paymentId).get();
+        if (!paymentDoc.exists) {
+            throw new Error('Pago no encontrado');
+        }
+
+        const paymentData = paymentDoc.data();
+        if (paymentData.status !== 'pending') {
+            throw new Error('Este pago ya ha sido procesado');
+        }
+
+        // Actualizar estado del pago
+        await window.db.collection('payment_requests').doc(paymentId).update({
+            status: 'approved',
+            approvedAt: window.firebase.firestore.FieldValue.serverTimestamp(),
+            approvedBy: window.auth.currentUser.uid
+        });
+
+        // Recargar pagos
+        await loadPayments();
+
+    } catch (error) {
+        console.error('Error al aprobar pago:', error);
+        alert('Error al aprobar pago: ' + error.message);
+    }
+}
+
 // Refresh handler
 document.getElementById('refreshBtn')?.addEventListener('click', loadPayments);

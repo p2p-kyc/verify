@@ -531,30 +531,50 @@ function scrollToBottom() {
 // Obtener el número de cuentas cobradas para una campaña
 async function getCuentasCobradas(campaignId) {
     try {
-        // Obtener todas las solicitudes de pago aprobadas
-        const paymentRequests = await window.db.collection('payment_requests')
-            .where('campaignId', '==', campaignId)
-            .where('status', '==', 'approved')
-            .get()
-            .catch(error => {
-                console.error('Error al obtener payment requests:', error);
-                return { empty: true };
-            });
+        if (!campaignId) {
+            console.error('Error: campaignId es undefined en getCuentasCobradas');
+            return 0;
+        }
 
-        if (!paymentRequests || paymentRequests.empty) return 0;
+        // Obtener todas las solicitudes de pago aprobadas y pagadas
+        const [approvedRequests, paidRequests] = await Promise.all([
+            window.db.collection('payment_requests')
+                .where('campaignId', '==', campaignId)
+                .where('status', '==', 'approved')
+                .get(),
+            window.db.collection('payment_requests')
+                .where('campaignId', '==', campaignId)
+                .where('status', '==', 'paid')
+                .get()
+        ]);
 
         let totalCuentasCobradas = 0;
-        paymentRequests.forEach(doc => {
-            const data = doc.data();
-            // Usar accountCount que es el campo correcto
-            if (data && typeof data.accountCount === 'number') {
-                totalCuentasCobradas += data.accountCount;
-            } else {
-                // Si no hay accountCount, asumir 1 cuenta
-                totalCuentasCobradas += 1;
-            }
-        });
 
+        // Procesar solicitudes aprobadas
+        if (approvedRequests && !approvedRequests.empty) {
+            approvedRequests.forEach(doc => {
+                const data = doc.data();
+                if (data && typeof data.accountCount === 'number') {
+                    totalCuentasCobradas += data.accountCount;
+                } else {
+                    totalCuentasCobradas += 1;
+                }
+            });
+        }
+
+        // Procesar solicitudes pagadas
+        if (paidRequests && !paidRequests.empty) {
+            paidRequests.forEach(doc => {
+                const data = doc.data();
+                if (data && typeof data.accountCount === 'number') {
+                    totalCuentasCobradas += data.accountCount;
+                } else {
+                    totalCuentasCobradas += 1;
+                }
+            });
+        }
+
+        console.log(`Total cuentas cobradas para campaña ${campaignId}:`, totalCuentasCobradas);
         return totalCuentasCobradas;
     } catch (error) {
         console.error('Error al obtener cuentas cobradas:', error);
