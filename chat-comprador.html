@@ -369,6 +369,46 @@
             display: none;
         }
 
+        /* Botón de cancelar campaña */
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            padding: 10px;
+            background-color: var(--header-bg);
+            border-top: 1px solid var(--border-color);
+        }
+
+        .action-button {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            background-color: var(--input-bg);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .action-button:hover {
+            background-color: #374149;
+        }
+
+        .action-button.danger {
+            background-color: #dc3545;
+        }
+
+        .action-button.danger:hover {
+            background-color: #bb2d3b;
+        }
+
+        .action-button i {
+            font-size: 1.2rem;
+        }
+
         /* Tooltip para el botón de terminar */
         #finishButton::after {
             content: 'Terminar campaña';
@@ -527,6 +567,12 @@
                         <div id="campaignInfo"></div>
                     </div>
                 </div>
+                <div class="action-buttons">
+                    <button class="action-button danger" onclick="handleCancelCampaign()">
+                        <i class='bx bx-x-circle'></i>
+                        Cancelar campaña
+                    </button>
+                </div>
             </div>
 
             <!-- Contenedor de mensajes -->
@@ -544,11 +590,7 @@
                 </button>
             </form>
 
-            <!-- Botón flotante de terminar campaña -->
-            <button id="finishButton">
-                <i class='bx bx-check-circle'></i>
-                <span>Terminar campaña</span>
-            </button>
+
         </div>
     </div>
 

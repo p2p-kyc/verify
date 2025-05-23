@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Refund Management - KYC P2P Admin</title>
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+    <div class="admin-container">
+        <!-- Sidebar -->
+        <nav class="admin-sidebar">
+            <div class="sidebar-header">
+                <img src="img/logo.png" alt="KYC P2P" class="logo">
+                <h2>Admin Panel</h2>
+            </div>
+            <ul class="sidebar-menu">
+                <li>
+                    <a href="admin.html">
+                        <i class='bx bxs-dashboard'></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="admin-campaigns.html">
+                        <i class='bx bx-list-ul'></i>
+                        <span>Campaigns</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="admin-payments.html">
+                        <i class='bx bx-dollar'></i>
+                        <span>Payments</span>
+                    </a>
+                </li>
+                <li class="active">
+                    <a href="admin-refunds.html">
+                        <i class='bx bx-money-withdraw'></i>
+                        <span>Refunds</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="admin-users.html">
+                        <i class='bx bx-user'></i>
+                        <span>Users</span>
+                    </a>
+                </li>
+            </ul>
+            <div class="sidebar-footer">
+                <button onclick="handleLogout()" class="logout-btn">
+                    <i class='bx bx-log-out'></i>
+                    <span>Logout</span>
+                </button>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="admin-main">
+            <header class="content-header">
+                <h1>Refund Management</h1>
+                <div class="header-actions">
+                    <div class="search-box">
+                        <i class='bx bx-search'></i>
+                        <input type="text" placeholder="Search refunds..." id="refundSearch">
+                    </div>
+                    <button id="refreshBtn" class="action-button">
+                        <i class='bx bx-refresh'></i>
+                        Refresh
+                    </button>
+                </div>
+            </header>
+
+            <!-- Filters -->
+            <div class="filters-section">
+                <div class="filter-group">
+                    <select id="dateFilter">
+                        <option value="all">All Dates</option>
+                        <option value="today">Today</option>
+                        <option value="week">This Week</option>
+                        <option value="month">This Month</option>
+                    </select>
+                    <select id="statusFilter">
+                        <option value="all">All Status</option>
+                        <option value="pending">Pending</option>
+                        <option value="approved">Approved</option>
+                        <option value="rejected">Rejected</option>
+                    </select>
+                    <select id="sortOrder">
+                        <option value="newest">Newest First</option>
+                        <option value="oldest">Oldest First</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Refunds Table -->
+            <div class="admin-content">
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Request ID</th>
+                                <th>Campaign</th>
+                                <th>Buyer</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="refundsList">
+                            <!-- Refund items will be inserted here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal para subir comprobante de reembolso -->
+    <div id="refundProofModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Upload Refund Proof</h2>
+                <button class="close-btn" onclick="closeRefundProofModal()">
+                    <i class='bx bx-x'></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="refundProofForm">
+                    <div class="form-group">
+                        <label for="refundProofFile">Select proof of refund:</label>
+                        <input type="file" id="refundProofFile" accept="image/*" required>
+                    </div>
+                    <div class="image-preview">
+                        <img id="imagePreview" style="display: none; max-width: 100%; margin-top: 10px;">
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="button primary">
+                            <i class='bx bx-upload'></i>
+                            Upload Proof
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
+    <script src="js/firebase-config.js"></script>
+    <script src="js/admin-refunds.js"></script>
+</body>
+</html>

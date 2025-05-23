@@ -7,7 +7,6 @@ let messagesListener = null;
 const messageForm = document.getElementById('messageForm');
 const messageInput = document.getElementById('messageInput');
 const messagesContainer = document.getElementById('messagesContainer');
-const finishButton = document.getElementById('finishButton');
 
 // Event listeners
 messageForm.addEventListener('submit', handleMessageSubmit);
@@ -68,26 +67,25 @@ async function sendImageMessage(imageData) {
         alert('Error al enviar la imagen. Por favor, intenta de nuevo.');
     }
 };
-finishButton.addEventListener('click', handleFinishCampaign);
 
 // Esperar a que Firebase esté inicializado
 window.addEventListener('load', () => {
     // Escuchar cambios de autenticación
     window.auth.onAuthStateChanged(async user => {
-    if (!user) {
-        window.location.href = 'index.html';
-        return;
-    }
+        if (!user) {
+            window.location.href = 'index.html';
+            return;
+        }
 
-    currentUser = user;
-    loadBuyerChats();
+        currentUser = user;
+        loadBuyerChats();
 
-    // Si hay un requestId en la URL, abrir ese chat
-    const urlParams = new URLSearchParams(window.location.search);
-    const requestId = urlParams.get('requestId');
-    if (requestId) {
-        openChat(requestId);
-    }
+        // Si hay un requestId en la URL, abrir ese chat
+        const urlParams = new URLSearchParams(window.location.search);
+        const requestId = urlParams.get('requestId');
+        if (requestId) {
+            openChat(requestId);
+        }
     });
 });
 
@@ -140,7 +138,7 @@ async function loadBuyerChats() {
             const sellerData = await getUserData(request.requestData.userId);
             const lastMessage = await getLastMessage(request.id);
             const statusClass = request.campaignData.status === 'active' ? 'active' : 'completed';
-            
+
             return `
                 <div class="chat-item ${statusClass}" onclick="openChat('${request.id}')" data-request-id="${request.id}">
                     <div class="chat-item-avatar">
@@ -221,7 +219,7 @@ async function openChat(requestId) {
         }
 
         const requestData = requestDoc.data();
-        
+
         // Obtener datos de la campaña
         const campaignDoc = await window.db.collection('campaigns').doc(requestData.campaignId).get();
         if (!campaignDoc.exists) {
@@ -229,7 +227,7 @@ async function openChat(requestId) {
         }
 
         const campaign = campaignDoc.data();
-        
+
         // Verificar que el usuario actual es el creador de la campaña
         if (campaign.createdBy !== currentUser.uid) {
             throw new Error('No tienes permiso para ver este chat');
@@ -246,7 +244,7 @@ async function openChat(requestId) {
 
         // Obtener datos del vendedor
         const sellerData = await getUserData(requestData.userId);
-        
+
         // Obtener cuentas cobradas
         const cuentasCobradas = await getCuentasCobradas(campaignDoc.id);
         const cuentasDisponibles = campaign.accountCount - cuentasCobradas;
@@ -271,9 +269,6 @@ async function openChat(requestId) {
             </div>
         `;
 
-        // Configurar botón de terminar campaña
-        finishButton.style.display = campaign.status === 'active' ? 'flex' : 'none';
-
         // Limpiar mensajes anteriores
         messagesContainer.innerHTML = '';
 
@@ -289,7 +284,7 @@ async function openChat(requestId) {
             .orderBy('createdAt', 'asc')
             .onSnapshot(snapshot => {
                 if (snapshot.metadata.hasPendingWrites) return;
-                
+
                 snapshot.docChanges().forEach(change => {
                     if (change.type === 'added') {
                         appendMessage(change.doc.data());
@@ -335,33 +330,64 @@ async function handleMessageSubmit(event) {
     }
 }
 
-// Manejar terminar campaña
-async function handleFinishCampaign() {
+// Manejar cancelar campaña
+async function handleCancelCampaign() {
     if (!activeRequest || !activeRequest.campaign) {
         alert('Por favor selecciona un chat primero');
         return;
     }
 
-    if (!confirm('¿Estás seguro de que deseas terminar la campaña?')) {
-        return;
-    }
-
     try {
-        // Actualizar estado de la campaña
-        await window.db.collection('campaigns').doc(activeRequest.campaign.id).update({
-            status: 'completed',
-            completedAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
+        // Verificar si hay pagos pendientes
+        const paymentRequests = await window.db.collection('payment_requests')
+            .where('campaignId', '==', activeRequest.campaign.id)
+            .where('status', 'in', ['pending', 'approved'])
+            .get();
 
-        // Ocultar botón de terminar
-        finishButton.style.display = 'none';
+        if (!paymentRequests.empty) {
+            alert('No se puede cancelar la campaña porque hay pagos pendientes');
+            return;
+        }
 
-        // Recargar chats
-        loadBuyerChats();
+        if (!confirm('¿Estás seguro de que deseas cancelar esta campaña? Esta acción no se puede deshacer.')) {
+            return;
+        }
+
+        // Crear solicitud de reembolso
+        const refundRequest = {
+            campaignId: activeRequest.campaign.id,
+            buyerId: currentUser.uid,
+            requestId: activeRequest.id,
+            status: 'pending',
+            createdAt: window.firebase.firestore.FieldValue.serverTimestamp(),
+            amount: activeRequest.totalAmount || 0,
+            currency: activeRequest.currency || 'USD'
+        };
+
+        await window.db.collection('refund_requests').add(refundRequest);
+
+        // Enviar mensaje al chat
+        const message = {
+            type: 'system',
+            text: 'Se ha solicitado la cancelación de la campaña. Un administrador revisará la solicitud.',
+            userId: currentUser.uid,
+            createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
+        };
+
+        await window.db.collection('requests')
+            .doc(activeRequest.id)
+            .collection('messages')
+            .add(message);
+
+        // Recargar chats y chat actual
+        await loadBuyerChats();
+        await openChat(activeRequest.id);
+
+        alert('Solicitud de cancelación enviada correctamente');
 
     } catch (error) {
-        console.error('Error finishing campaign:', error);
-        alert('Error al terminar la campaña: ' + error.message);
+        console.error('Error al cancelar campaña:', error);
+        alert('Error al cancelar la campaña: ' + error.message);
     }
 }
 
