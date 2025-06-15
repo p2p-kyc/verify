@@ -9,6 +9,7 @@ auth.onAuthStateChanged(user => {
         window.location.href = 'login.html';
         return;
     }
+
     loadMyCampaigns();
     setupEventListeners();
 });
@@ -96,6 +97,7 @@ async function handleCampaignSubmit(event) {
     event.preventDefault();
     
     try {
+
         const formData = new FormData(event.target);
         const campaignData = {
             title: formData.get('title'),

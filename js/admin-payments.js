@@ -70,6 +70,16 @@ function createPaymentRow(id, payment) {
                 <button onclick="rejectPayment('${id}')" class="action-btn reject" title="Reject Payment">
                     <i class='bx bx-x'></i>
                 </button>
+            ` : payment.status === 'appealed' ? `
+                <button onclick="handleAppeal('${id}', true)" class="action-btn approve" title="Approve Appeal">
+                    <i class='bx bx-check'></i>
+                </button>
+                <button onclick="handleAppeal('${id}', false)" class="action-btn reject" title="Reject Appeal">
+                    <i class='bx bx-x'></i>
+                </button>
+                <button onclick="openChat('${payment.requestId}')" class="action-btn chat" title="Open Chat">
+                    <i class='bx bx-chat'></i>
+                </button>
             ` : ''}
         </td>
     `;
@@ -267,6 +277,66 @@ async function rejectPayment(paymentId) {
     } catch (error) {
         console.error('Error rejecting payment:', error);
     }
+}
+
+// Manejar apelaciones
+async function handleAppeal(paymentId, approve) {
+    try {
+        const paymentRef = window.db.collection('payment_requests').doc(paymentId);
+        const paymentDoc = await paymentRef.get();
+        const payment = paymentDoc.data();
+
+        if (!payment || payment.status !== 'appealed') {
+            throw new Error('Invalid payment or status');
+        }
+
+        const batch = window.db.batch();
+
+        // Actualizar estado del pago
+        batch.update(paymentRef, {
+            status: approve ? 'approved' : 'rejected',
+            appealRespondedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            appealResponse: approve ? 'approved' : 'rejected'
+        });
+
+        // Agregar mensaje al chat
+        const messageRef = window.db.collection('requests')
+            .doc(payment.requestId)
+            .collection('messages')
+            .doc();
+
+        batch.set(messageRef, {
+            text: approve 
+                ? '👍 El administrador ha aprobado la apelación del pago' 
+                : '❌ El administrador ha rechazado la apelación del pago',
+            type: 'appeal_response',
+            userId: window.auth.currentUser.uid,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            paymentRequestId: paymentId,
+            response: approve ? 'approved' : 'rejected'
+        });
+
+        // Registrar actividad
+        const activityRef = window.db.collection('activity').doc();
+        batch.set(activityRef, {
+            type: 'payment_appeal',
+            title: approve ? 'Appeal Approved' : 'Appeal Rejected',
+            description: `Appeal for payment of ${payment.amount} USDT has been ${approve ? 'approved' : 'rejected'}`,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        await batch.commit();
+        loadPayments();
+
+    } catch (error) {
+        console.error('Error handling appeal:', error);
+        alert('Error al procesar la apelación: ' + error.message);
+    }
+}
+
+// Abrir chat
+function openChat(requestId) {
+    window.open(`chat-admin.html?requestId=${requestId}`, '_blank');
 }
 
 // Initialize payments page

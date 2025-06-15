@@ -497,6 +497,32 @@ async function appendMessage(message) {
             } else {
                 messagesContainer.insertBefore(messageDiv, messages[index]);
             }
+        } else if (message.type === 'payment_rejected') {
+            // Mostrar mensaje de rechazo con opciones para apelar
+            messageDiv.classList.add('payment-rejected');
+            messageDiv.innerHTML = `
+                <div class="message-content payment-rejected-content">
+                    <div class="payment-text">${message.text}</div>
+                    <div class="payment-actions">
+                        <button class="button primary" onclick="handlePaymentResponse('${message.paymentRequestId}', 'appeal')">
+                            <i class='bx bx-message-square-dots'></i>
+                            Apelar decisión
+                        </button>
+                        <button class="button secondary" onclick="handlePaymentResponse('${message.paymentRequestId}', 'accept_rejection')">
+                            <i class='bx bx-check'></i>
+                            Continuar sin pago
+                        </button>
+                    </div>
+                </div>
+                <div class="timestamp">${formatDate(message.createdAt)}</div>
+            `;
+            
+            if (index === -1) {
+                messagesContainer.appendChild(messageDiv);
+            } else {
+                messagesContainer.insertBefore(messageDiv, messages[index]);
+            }
+            return;
         } else if (message.type === 'payment_proof') {
             textSpan.classList.add('payment-proof-message');
             contentDiv.classList.add('payment-proof-content');
@@ -790,16 +816,55 @@ async function handlePaymentResponse(paymentRequestId, response) {
 
         const paymentRequestData = paymentRequestDoc.data();
 
-        // Verificar que la solicitud esté pendiente
-        if (paymentRequestData.status !== 'pending') {
-            throw new Error('Esta solicitud de pago ya fue procesada');
+        // Verificar estado según la acción
+        if (response === 'appeal') {
+            // Para apelación, verificar que el pago esté rechazado
+            if (paymentRequestData.status !== 'rejected') {
+                throw new Error('Solo se pueden apelar pagos rechazados');
+            }
+        } else if (response === 'accept_rejection') {
+            // Para aceptar rechazo, verificar que el pago esté rechazado
+            if (paymentRequestData.status !== 'rejected') {
+                throw new Error('Solo se puede aceptar el rechazo de pagos rechazados');
+            }
+        } else {
+            // Para otras acciones, verificar que esté pendiente
+            if (paymentRequestData.status !== 'pending') {
+                throw new Error('Esta solicitud de pago ya fue procesada');
+            }
         }
 
-        // Actualizar estado de la solicitud
-        await window.db.collection('payment_requests').doc(paymentRequestId).update({
-            status: response,
-            respondedAt: window.firebase.firestore.FieldValue.serverTimestamp()
-        });
+        // Actualizar estado según la acción
+        if (response === 'appeal') {
+            await window.db.collection('payment_requests').doc(paymentRequestId).update({
+                status: 'appealed',
+                appealedAt: window.firebase.firestore.FieldValue.serverTimestamp(),
+                appealedBy: currentUser.uid
+            });
+
+            // Notificar al administrador
+            await window.db.collection('admin_notifications').add({
+                type: 'payment_appeal',
+                paymentRequestId,
+                sellerId: currentUser.uid,
+                requestId: paymentRequestData.requestId,
+                campaignId: paymentRequestData.campaignId,
+                amount: paymentRequestData.amount,
+                currency: paymentRequestData.currency,
+                createdAt: window.firebase.firestore.FieldValue.serverTimestamp(),
+                status: 'pending'
+            });
+        } else if (response === 'accept_rejection') {
+            await window.db.collection('payment_requests').doc(paymentRequestId).update({
+                status: 'rejected_accepted',
+                rejectionAcceptedAt: window.firebase.firestore.FieldValue.serverTimestamp()
+            });
+        } else {
+            await window.db.collection('payment_requests').doc(paymentRequestId).update({
+                status: response,
+                respondedAt: window.firebase.firestore.FieldValue.serverTimestamp()
+            });
+        }
 
         // Si el pago fue aprobado, actualizar el contador y verificar si la campaña debe finalizar
         if (response === 'approved') {
@@ -844,17 +909,43 @@ async function handlePaymentResponse(paymentRequestId, response) {
 
         // No actualizamos el estado de la campaña para mantenerla aprobada
 
-        // Crear mensaje de respuesta
-        const message = {
-            text: response === 'approved' 
-                ? '👍 El comprador ha aprobado la solicitud de pago'
-                : '❌ El comprador ha rechazado la solicitud de pago',
-            userId: currentUser.uid,
-            type: 'payment_response',
-            paymentRequestId,
-            response,
-            createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
-        };
+        // Crear mensaje según la acción
+        let message;
+        if (response === 'appeal') {
+            message = {
+                text: '⚠️ Has solicitado una apelación. El administrador revisará tu caso y la documentación.',
+                userId: currentUser.uid,
+                type: 'payment_appeal',
+                paymentRequestId,
+                amount: paymentRequestData.amount,
+                currency: paymentRequestData.currency,
+                accountsRequested: paymentRequestData.accountsRequested,
+                createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
+            };
+        } else if (response === 'accept_rejection') {
+            message = {
+                text: '✅ Has aceptado continuar sin el pago',
+                userId: currentUser.uid,
+                type: 'payment_response',
+                paymentRequestId,
+                response: 'rejected_accepted',
+                createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
+            };
+        } else {
+            message = {
+                text: response === 'approved' 
+                    ? `👍 El comprador ha aprobado la solicitud de pago de ${paymentRequestData.accountsRequested} cuenta${paymentRequestData.accountsRequested > 1 ? 's' : ''} por $${paymentRequestData.amount} ${paymentRequestData.currency}`
+                    : `❌ El comprador ha rechazado la solicitud de pago de ${paymentRequestData.accountsRequested} cuenta${paymentRequestData.accountsRequested > 1 ? 's' : ''} por $${paymentRequestData.amount} ${paymentRequestData.currency}`,
+                userId: currentUser.uid,
+                type: 'payment_response',
+                paymentRequestId,
+                response,
+                amount: paymentRequestData.amount,
+                currency: paymentRequestData.currency,
+                accountsRequested: paymentRequestData.accountsRequested,
+                createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
+            };
+        }
 
         // Guardar mensaje en la conversación
         await window.db.collection('requests')

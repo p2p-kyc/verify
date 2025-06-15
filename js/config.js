@@ -23,7 +23,8 @@ window.userRole = null;
 // Configure Firestore settings
 window.db.settings({
     cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED,
-    experimentalForceLongPolling: true
+    experimentalForceLongPolling: true,
+    merge: true
 });
 
 // Enable offline persistence
@@ -31,11 +32,23 @@ window.db.enablePersistence({
     synchronizeTabs: true
 }).catch((err) => {
     if (err.code === 'failed-precondition') {
-        console.warn('Multiple tabs open, persistence can only be enabled in one tab at a time.');
+        // Múltiples pestañas abiertas, la persistencia solo puede habilitarse en una pestaña
+        // Esto es normal y no afecta la funcionalidad principal
+        console.info('Multiple tabs open, persistence enabled in another tab.');
     } else if (err.code === 'unimplemented') {
         console.warn('The current browser does not support persistence.');
+    } else {
+        console.error('Error enabling persistence:', err);
     }
 });
+
+// Limpiar caché de IndexedDB si hay problemas de compatibilidad
+if (window.indexedDB) {
+    window.indexedDB.deleteDatabase('firestore/kyc-p2p/main')
+        .onsuccess = () => {
+            console.info('IndexedDB cache cleared successfully.');
+        };
+}
 
 // Set up connection monitoring
 const updateConnectionStatus = (online) => {

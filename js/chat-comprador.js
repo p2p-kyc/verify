@@ -486,22 +486,25 @@ async function handlePayment(paymentRequestId, response) {
             return;
         }
 
-        // Actualizar estado de la solicitud
+        // Actualizar estado de la solicitud a rejected o approved
         await window.db.collection('payment_requests').doc(paymentRequestId).update({
-            status: response,
-            respondedAt: window.firebase.firestore.FieldValue.serverTimestamp()
+            status: response === 'approved' ? 'approved' : 'rejected',
+            respondedAt: window.firebase.firestore.FieldValue.serverTimestamp(),
+            reviewedBy: currentUser.uid
         });
-
 
         // Crear mensaje de respuesta
         const message = {
             text: response === 'approved' 
-                ? '👍 Has aprobado la solicitud de pago'
-                : '❌ Has rechazado la solicitud de pago',
+                ? `👍 Has aprobado la solicitud de pago de ${paymentRequestData.accountsRequested} cuenta${paymentRequestData.accountsRequested > 1 ? 's' : ''} por $${paymentRequestData.amount} ${paymentRequestData.currency}`
+                : `❌ Has rechazado la solicitud de pago de ${paymentRequestData.accountsRequested} cuenta${paymentRequestData.accountsRequested > 1 ? 's' : ''} por $${paymentRequestData.amount} ${paymentRequestData.currency}`,
             userId: currentUser.uid,
-            type: 'payment_response',
+            type: response === 'approved' ? 'payment_response' : 'payment_rejected',
             paymentRequestId,
             response,
+            amount: paymentRequestData.amount,
+            currency: paymentRequestData.currency,
+            accountsRequested: paymentRequestData.accountsRequested,
             createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
         };
 

@@ -1,0 +1,71 @@
+/* Estilos globales */
+:root {
+    --primary-color: #4CAF50;
+    --secondary-color: #2196F3;
+    --danger-color: #f44336;
+    --text-color: #333;
+    --bg-color: #f5f5f5;
+    --border-color: #ddd;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    margin: 0;
+    padding: 0;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+}
+
+.button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+}
+
+.button.primary {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.button.secondary {
+    background-color: var(--secondary-color);
+    color: white;
+}
+
+.button.danger {
+    background-color: var(--danger-color);
+    color: white;
+}
+
+.button:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    color: var(--text-color);
+}
+
+.loading i {
+    font-size: 24px;
+}
+
+.error {
+    color: var(--danger-color);
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid var(--danger-color);
+    border-radius: 4px;
+    background-color: rgba(244, 67, 54, 0.1);
+}
