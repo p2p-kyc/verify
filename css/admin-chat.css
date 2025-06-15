@@ -69,7 +69,9 @@
 .admin-chat .chat-area {
     display: flex;
     flex-direction: column;
+    height: 100vh;
     background-color: #fff;
+    overflow: hidden; /* Evitar doble scroll */
 }
 
 .admin-chat .chat-header {
@@ -79,10 +81,18 @@
 }
 
 .admin-chat .messages-container {
-    flex: 1;
+    flex: 1; /* Ocupa el espacio restante */
     padding: 20px;
-    overflow-y: auto;
-    background-color: #f5f6fa;
+    overflow-y: auto; /* Habilita el scroll solo aquí */
+    background-color: #f9f9f9;
+}
+
+.admin-chat .message-form {
+    padding: 15px 20px;
+    background-color: #ffffff;
+    border-top: 1px solid #e1e1e1;
+    display: flex;
+    gap: 10px;
 }
 
 /* Panel de información */

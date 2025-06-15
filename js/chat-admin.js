@@ -128,6 +128,8 @@ async function loadAppealsChats() {
             return;
         }
 
+        chatsList.innerHTML = ''; // Limpiar loader
+
         // Procesar cada apelación
         for (const appealDoc of appealsQuery.docs) {
             const appealData = appealDoc.data();
@@ -152,12 +154,13 @@ async function loadAppealsChats() {
             
             // Obtener datos del vendedor
             const sellerDoc = await window.db.collection('users').doc(appealData.sellerId).get();
-            const sellerData = sellerDoc.exists ? sellerDoc.data() : { name: 'Usuario desconocido' };
+            const sellerData = sellerDoc.exists ? sellerDoc.data() : {};
+            const sellerName = sellerData.displayName || sellerData.name || 'Usuario desconocido';
             
             chatElement.innerHTML = `
                 <div class="chat-info">
                     <div class="chat-header">
-                        <h4>Apelación de ${sellerData.name}</h4>
+                        <h4>Apelación de ${sellerName}</h4>
                         <span class="amount">$${appealData.amount} ${appealData.currency}</span>
                     </div>
                     <p class="last-message">${lastMessage || 'No hay mensajes'}</p>
@@ -266,12 +269,13 @@ async function openChat(requestId, appealId) {
 // Actualizar información del chat y apelación
 async function updateChatInfo() {
     try {
-        // Obtener datos del vendedor
+        // Obtener datos del vendedor para el título
         const sellerDoc = await window.db.collection('users').doc(currentAppeal.sellerId).get();
-        const sellerData = sellerDoc.exists ? sellerDoc.data() : { name: 'Usuario desconocido' };
+        const sellerData = sellerDoc.exists ? sellerDoc.data() : {};
+        const sellerName = sellerData.displayName || sellerData.name || 'Usuario desconocido';
 
         // Actualizar título del chat
-        chatTitle.textContent = `Apelación de ${sellerData.name}`;
+        chatTitle.textContent = `Apelación de ${sellerName}`;
 
         // Actualizar información de la campaña
         const campaignDoc = await window.db.collection('campaigns').doc(currentAppeal.campaignId).get();
@@ -286,15 +290,20 @@ async function updateChatInfo() {
             campaignInfo.innerHTML = '';
         }
 
-        // Actualizar información de la apelación
+        // Obtener datos del usuario que apeló
+        const appealedByDoc = await window.db.collection('users').doc(currentAppeal.sellerId).get();
+        const appealedByData = appealedByDoc.exists ? appealedByDoc.data() : {};
+        const appealedByName = appealedByData.displayName || appealedByData.name || 'desconocido';
+        
+        // Actualizar panel de información
         appealInfo.innerHTML = `
-            <div class="appeal-details">
-                <h4>Detalles del pago</h4>
-                <p><strong>Monto total:</strong> $${currentAppeal.amount} ${currentAppeal.currency}</p>
-                <p><strong>Cuentas solicitadas:</strong> ${currentAppeal.accountsRequested}</p>
-                <p><strong>Precio por cuenta:</strong> $${currentAppeal.pricePerAccount} ${currentAppeal.currency}</p>
-                <p><strong>Apelado el:</strong> ${formatDate(currentAppeal.appealedAt)}</p>
-                <p><strong>Apelado por:</strong> ${sellerData.name}</p>
+            <h4>Detalles del pago</h4>
+            <ul>
+                <li><strong>Monto total:</strong> ${currentAppeal.amount} ${currentAppeal.currency}</li>
+                <li><strong>Cuentas solicitadas:</strong> ${currentAppeal.accounts || 1}</li>
+                <li><strong>Precio por cuenta:</strong> ${currentAppeal.pricePerAccount || currentAppeal.amount} ${currentAppeal.currency}</li>
+                <li><strong>Apelado el:</strong> ${formatDate(currentAppeal.appealedAt)}</li>
+                <li><strong>Apelado por:</strong> ${appealedByName}</li>
                 <p><strong>Estado actual:</strong> ${formatStatus(currentAppeal.status)}</p>
             </div>
             <div class="appeal-details">
