@@ -1106,17 +1106,9 @@ async function initializeDashboard() {
                             window.unsubscribeCampaigns();
                         }
 
-                        // Get initial data from cache first
-                        const cachedData = await window.db.collection('campaigns')
-                            .get({ source: 'cache' })
-                            .catch(() => null);
-
-                        if (cachedData) {
-                            updateCampaignsFeed(cachedData);
-                        }
-
-                        // Set up real-time listener
+                        // Mostrar solo campañas activas por defecto
                         window.unsubscribeCampaigns = window.db.collection('campaigns')
+                            .where('status', '==', 'active')
                             .onSnapshot(
                                 { includeMetadataChanges: true },
                                 (snapshot) => {
