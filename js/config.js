@@ -32,8 +32,8 @@ window.db.enablePersistence({
     synchronizeTabs: true
 }).catch((err) => {
     if (err.code === 'failed-precondition') {
-        // Múltiples pestañas abiertas, la persistencia solo puede habilitarse en una pestaña
-        // Esto es normal y no afecta la funcionalidad principal
+        // Multiple tabs open, persistence can only be enabled in one tab
+        // This is normal and doesn't affect main functionality
         console.info('Multiple tabs open, persistence enabled in another tab.');
     } else if (err.code === 'unimplemented') {
         console.warn('The current browser does not support persistence.');
@@ -42,7 +42,7 @@ window.db.enablePersistence({
     }
 });
 
-// Limpiar caché de IndexedDB si hay problemas de compatibilidad
+// Clear IndexedDB cache if there are compatibility issues
 if (window.indexedDB) {
     window.indexedDB.deleteDatabase('firestore/kyc-p2p/main')
         .onsuccess = () => {

@@ -61,7 +61,7 @@ function handleLogout() {
         });
 }
 
-// Verificar si el usuario es administrador
+// Check if user is administrator
 async function isAdmin(uid) {
     try {
         const userDoc = await window.db.collection('users').doc(uid).get();
@@ -72,7 +72,7 @@ async function isAdmin(uid) {
     }
 }
 
-// Variables globales
+// Global variables
 if (typeof window.userRole === 'undefined') {
     window.userRole = null;
 }
@@ -80,23 +80,23 @@ if (typeof window.currentUser === 'undefined') {
     window.currentUser = null;
 }
 
-// Escuchar cambios en el estado de autenticación
+// Listen for authentication state changes
 window.auth.onAuthStateChanged(async (user) => {
     if (user) {
-        // Usuario autenticado
+        // Authenticated user
         window.currentUser = user;
         const userDoc = await db.collection('users').doc(user.uid).get();
         
         if (userDoc.exists) {
-            // Actualizar último acceso y guardar rol
+            // Update last access and save role
             const userData = userDoc.data();
             window.userRole = userData.role;
             await window.db.collection('users').doc(user.uid).update({
                 lastLogin: firebase.firestore.FieldValue.serverTimestamp()
             });
         } else {
-            // Crear documento de usuario si no existe
-            window.userRole = 'user'; // rol por defecto
+            // Create user document if it doesn't exist
+            window.userRole = 'user'; // default role
             await window.db.collection('users').doc(user.uid).set({
                 email: user.email,
                 role: userRole,
@@ -105,23 +105,23 @@ window.auth.onAuthStateChanged(async (user) => {
             });
         }
 
-        // Actualizar UI
+        // Update UI
         document.querySelectorAll('.auth-required').forEach(el => el.style.display = 'block');
         document.querySelectorAll('.no-auth-required').forEach(el => el.style.display = 'none');
         
-        // Mostrar email del usuario
+        // Show user email
         const userEmailElements = document.getElementsByClassName('user-email');
         Array.from(userEmailElements).forEach(element => {
             element.textContent = user.email;
         });
 
-        // Redirigir si no es admin y está en admin.html
+        // Redirect if not admin and on admin.html
         if (window.location.pathname.includes('admin.html') && userRole !== 'admin') {
             window.location.href = 'index.html';
         }
 
     } else {  
-        // Usuario no autenticado
+        // Unauthenticated user
         document.querySelectorAll('.auth-required').forEach(el => el.style.display = 'none');
         document.querySelectorAll('.no-auth-required').forEach(el => el.style.display = 'block');
     }

@@ -66,11 +66,11 @@
             </div>
             <div class="sidebar-section">
                 <h3>My Activity</h3>
-                <a href="#" class="sidebar-link">
+                <a href="campaigns-buyer.html" class="sidebar-link">
                     <i class='bx bx-purchase-tag'></i>
                     <span>My Campaigns</span>
                 </a>
-                <a href="#" class="sidebar-link">
+                <a href="my-payments.html" class="sidebar-link">
                     <i class='bx bx-wallet'></i>
                     <span>My Payments</span>
                 </a>
@@ -80,7 +80,7 @@
         <!-- Feed principal -->
         <main class="main-feed">
 
-        <!-- Modal para crear campaña -->
+        <!-- Modal for creating campaign -->
         <div id="createCampaignModal" class="modal">
             <div class="modal-content">
                 <form id="createCampaignForm">
@@ -120,16 +120,16 @@
                                         <i class='bx bx-globe'></i>
                                         Target Countries
                                     </label>
-                                    <select id="countries" multiple required>
+                                    <select id="countries" name="countries" multiple required style="min-height: 120px;">
+                                        <option value="all">All Country</option>
                                         <option value="us">United States</option>
                                         <option value="uk">United Kingdom</option>
                                         <option value="ca">Canada</option>
                                         <option value="au">Australia</option>
                                         <option value="nz">New Zealand</option>
                                     </select>
-                                    <small class="form-help">Select multiple countries</small>
+                                    <small class="form-help">Select one or more countries. Hold Ctrl (Windows) or Cmd (Mac) to select multiple.</small>
                                 </div>
-                                <small class="form-help">Hold Ctrl/Cmd to select multiple countries</small>
                                 <div class="input-group">
                                     <label for="accountCount">
                                         <i class='bx bx-user-plus'></i>
@@ -177,13 +177,18 @@
                                             <span>Choose a file or drag it here</span>
                                         </label>
                                     </div>
+                                    <div style="margin: 18px 0; text-align: center;">
+                                        <div style="background: #f5f6fa; border-radius: 12px; padding: 18px 12px; display: inline-block; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                                            <div style="font-size: 1.1rem; color: #222; font-weight: 600; margin-bottom: 8px;">To activate your campaign, you must pay the total campaign amount.</div>
+                                            <div style="font-size: 1rem; color: #555; margin-bottom: 6px;">Please make the payment to the following Binance ID:</div>
+                                            <div style="font-size:1.4rem; color:#27ae60; font-weight: bold; letter-spacing: 1px;">777809838</div>
+                                        </div>
+                                    </div>
                                     <small class="form-help">Upload a screenshot of your Binance payment (max 2MB)</small>
                                     <input type="hidden" id="paymentProofBase64">
                                 </div>
                             </div>
                         </div>
-                        <small class="form-help">Upload a screenshot of your Binance payment (max 2MB)</small>
-                        <input type="hidden" id="paymentProofBase64">
                     </div>
                     
                     <div class="modal-footer">
@@ -221,12 +226,13 @@
                 </div>
             </div>
 
-            <!-- Campaigns Feed -->
+            <!-- Campaign filters -->
             <div class="feed-filters">
-                <button class="filter-btn active">All</button>
-                <button class="filter-btn">Active</button>
-                <button class="filter-btn">Pending</button>
-                <button class="filter-btn">Completed</button>
+                <button class="filter-btn active" data-status="all" onclick="applyDashboardFilter('all')">All</button>
+                <button class="filter-btn" data-status="active" onclick="applyDashboardFilter('active')">Active</button>
+                <button class="filter-btn" data-status="pending" onclick="applyDashboardFilter('pending')">Pending</button>
+                <button class="filter-btn" data-status="completed" onclick="applyDashboardFilter('completed')">Completed</button>
+                <button class="filter-btn" data-status="cancelled" onclick="applyDashboardFilter('cancelled')">Cancelled</button>
             </div>
 
             <div id="availableCampaigns" class="campaigns-feed">
@@ -241,21 +247,21 @@
             <div class="sidebar-section">
                 <h3>Campaign Stats</h3>
                 <div class="stats-card">
-                    <div class="stat-item">
+                    <div class="stat-item" onclick="applyDashboardFilter('active')" style="cursor:pointer;">
                         <i class='bx bx-trending-up'></i>
                         <div class="stat-info">
                             <span class="stat-label">Active</span>
                             <span class="stat-value" id="activeCount">0</span>
                         </div>
                     </div>
-                    <div class="stat-item">
+                    <div class="stat-item" onclick="applyDashboardFilter('pending')" style="cursor:pointer;">
                         <i class='bx bx-time'></i>
                         <div class="stat-info">
                             <span class="stat-label">Pending</span>
                             <span class="stat-value" id="pendingCount">0</span>
                         </div>
                     </div>
-                    <div class="stat-item">
+                    <div class="stat-item" onclick="applyDashboardFilter('completed')" style="cursor:pointer;">
                         <i class='bx bx-check-double'></i>
                         <div class="stat-info">
                             <span class="stat-label">Completed</span>

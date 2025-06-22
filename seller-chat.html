@@ -1,58 +1,58 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat del Vendedor - KYC P2P</title>
+    <title>Seller Chat - KYC P2P</title>
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="chat-container">
-        <!-- Lista de chats -->
+        <!-- Chat list -->
         <div class="chats-list">
-            <h2>Mis Chats</h2>
+            <h2>My Chats</h2>
             <div id="chatsList"></div>
         </div>
 
-        <!-- Área de chat -->
+        <!-- Chat area -->
         <div class="chat-area">
             <div class="chat-header">
-                <h3 id="chatTitle">Selecciona un chat</h3>
+                <h3 id="chatTitle">Select a chat</h3>
             </div>
 
-            <!-- Contenedor de mensajes -->
+            <!-- Messages container -->
             <div id="messagesContainer" class="messages-container"></div>
 
-            <!-- Formulario de mensajes -->
+            <!-- Message form -->
             <form id="messageForm" class="message-form">
-                <input type="text" id="messageInput" placeholder="Escribe un mensaje...">
+                <input type="text" id="messageInput" placeholder="Type a message...">
                 <button type="submit">
                     <i class='bx bx-send'></i>
                 </button>
             </form>
 
-            <!-- Botón de cobro -->
+            <!-- Charge button -->
             <button id="chargeButton" class="action-button">
                 <i class='bx bx-dollar'></i>
-                <span>Cobrar cuenta</span>
+                <span>Charge account</span>
             </button>
         </div>
     </div>
 
-    <!-- Modal de cobro -->
+    <!-- Charge modal -->
     <div id="chargeModal" class="modal">
         <div class="modal-content">
-            <h3>Confirmar Cobro</h3>
+            <h3>Confirm Charge</h3>
             <div id="modalCampaignInfo"></div>
             <div class="modal-actions">
                 <button id="confirmChargeButton" class="action-button">
                     <i class='bx bx-check'></i>
-                    <span>Confirmar cobro</span>
+                    <span>Confirm charge</span>
                 </button>
                 <button onclick="closeChargeModal()" class="action-button secondary">
                     <i class='bx bx-x'></i>
-                    <span>Cancelar</span>
+                    <span>Cancel</span>
                 </button>
             </div>
         </div>

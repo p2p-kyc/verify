@@ -1,4 +1,4 @@
-// Función para formatear fechas
+// Function to format dates
 function formatDate(timestamp) {
     if (!timestamp) return 'N/A';
     const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
@@ -12,7 +12,7 @@ function formatDate(timestamp) {
 }
 
 // Create campaign
-// Función para convertir imagen a Base64
+// Function to convert image to Base64
 function convertToBase64(file) {
     return new Promise((resolve, reject) => {
         if (file.size > 2 * 1024 * 1024) { // 2MB max
@@ -27,7 +27,7 @@ function convertToBase64(file) {
     });
 }
 
-// Función para previsualizar imagen
+// Function to preview image
 function previewImage(file) {
     const preview = document.getElementById('paymentProofPreview');
     const reader = new FileReader();
@@ -611,7 +611,7 @@ function toggleCampaignMenu(id) {
 
     campaign.appendChild(menu);
 
-    // Cerrar el menú al hacer clic fuera de él
+    // Close menu when clicking outside
     document.addEventListener('click', function closeMenu(e) {
         if (!menu.contains(e.target) && !e.target.closest('.campaign-menu-btn')) {
             menu.remove();
@@ -823,29 +823,29 @@ async function viewCampaign(id) {
         const campaign = { id: campaignDoc.id, ...campaignDoc.data() };
         const isCreator = campaign.createdBy === window.currentUser.uid;
 
-        // Verificar si la campaña está aprobada por el administrador
+        // Check if campaign is approved by admin
         if (campaign.status !== 'active') {
-            showToast('Esta campaña no está aprobada por el administrador', 'error');
+            showToast('This campaign is not approved by the administrator', 'error');
             return;
         }
 
         if (isCreator) {
-            // El vendedor accede al chat si la campaña está aprobada
+            // Seller accesses chat if campaign is approved
             const requestsSnapshot = await window.db.collection('requests')
                 .where('campaignId', '==', id)
                 .where('status', '==', 'approved')
                 .get();
 
             if (requestsSnapshot.empty) {
-                showToast('No hay vendedores activos en esta campaña', 'info');
+                showToast('No active sellers in this campaign', 'info');
                 return;
             }
 
-            // Tomar la primera solicitud
+            // Take the first request
             const requestDoc = requestsSnapshot.docs[0];
             window.location.href = `chat-comprador.html?requestId=${requestDoc.id}`;
         } else {
-            // Verificar si ya existe una solicitud para este usuario y campaña
+            // Check if a request already exists for this user and campaign
             const existingRequest = await window.db.collection('requests')
                 .where('campaignId', '==', id)
                 .where('userId', '==', window.currentUser.uid)
@@ -854,34 +854,34 @@ async function viewCampaign(id) {
             let requestId;
 
             if (!existingRequest.empty) {
-                // Si ya existe una solicitud, usar esa
+                // If a request already exists, use that one
                 requestId = existingRequest.docs[0].id;
             } else {
-                // Crear una nueva solicitud y chat
+                // Create a new request and chat
                 const requestData = {
                     campaignId: id,
                     userId: window.currentUser.uid,
-                    status: 'approved', // Aprobado automáticamente
+                    status: 'approved', // Automatically approved
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 };
 
-                // Crear la solicitud
+                // Create the request
                 const requestRef = await window.db.collection('requests').add(requestData);
                 requestId = requestRef.id;
 
-                // Crear el primer mensaje del chat
+                // Create the first chat message
                 const messageData = {
-                    text: '¡Hola! Me interesa participar en esta campaña.',
+                    text: 'Hello! I am interested in participating in this campaign.',
                     userId: window.currentUser.uid,
                     type: 'text',
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 };
 
-                // Agregar el mensaje a la colección de mensajes de la solicitud
+                // Add the message to the request's messages collection
                 await requestRef.collection('messages').add(messageData);
             }
 
-            // Redirigir al chat del vendedor
+            // Redirect to seller chat
             window.location.href = `chat-vendedor.html?requestId=${requestId}`;
         }
 
@@ -1106,7 +1106,7 @@ async function initializeDashboard() {
                             window.unsubscribeCampaigns();
                         }
 
-                        // Mostrar solo campañas activas por defecto
+                        // Show only active campaigns by default
                         window.unsubscribeCampaigns = window.db.collection('campaigns')
                             .where('status', '==', 'active')
                             .onSnapshot(
@@ -1157,7 +1157,7 @@ async function initializeDashboard() {
     }
 }
 
-// Función para mostrar mensaje de offline
+// Function to show offline message
 function showOfflineMessage() {
     const offlineMessage = document.createElement('div');
     offlineMessage.className = 'offline-message';
@@ -1167,7 +1167,7 @@ function showOfflineMessage() {
     `;
     document.body.appendChild(offlineMessage);
 
-    // Remover el mensaje después de 5 segundos
+    // Remove the message after 5 seconds
     setTimeout(() => {
         offlineMessage.remove();
     }, 5000);
@@ -1176,9 +1176,23 @@ function showOfflineMessage() {
 // Wait for DOM to be fully loaded
 document.addEventListener('DOMContentLoaded', initializeDashboard);
 
-// Limpiar listeners cuando el usuario salga de la página
+// Clean up listeners when user leaves the page
 window.addEventListener('beforeunload', () => {
     if (window.unsubscribeCampaigns) {
         window.unsubscribeCampaigns();
     }
 });
+
+function applyDashboardFilter(status) {
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    filterButtons.forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.status === status);
+    });
+    let query = window.db.collection('campaigns').orderBy('createdAt', 'desc');
+    if (status && status !== 'all') {
+        query = query.where('status', '==', status);
+    }
+    query.get().then(snapshot => {
+        updateCampaignsFeed(snapshot);
+    });
+}

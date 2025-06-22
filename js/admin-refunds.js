@@ -1,8 +1,8 @@
-// Variables globales
+// Global variables
 let currentUser = null;
 let currentRefundId = null;
 
-// Cargar reembolsos
+// Load refunds
 async function loadRefunds() {
     try {
         const snapshot = await db.collection('refund_requests')
@@ -37,13 +37,13 @@ async function loadRefunds() {
     }
 }
 
-// Crear fila de reembolso
+// Create refund row
 function createRefundRow(id, refund) {
     const row = document.createElement('tr');
     
-    // Formatear fecha
+    // Format date
     const createdAt = refund.createdAt?.toDate ? 
-        refund.createdAt.toDate().toLocaleDateString('es-ES', {
+        refund.createdAt.toDate().toLocaleDateString('en-US', {
             year: 'numeric',
             month: '2-digit',
             day: '2-digit',
@@ -82,75 +82,75 @@ function createRefundRow(id, refund) {
     return row;
 }
 
-// Aprobar reembolso
+// Approve refund
 async function approveRefund(refundId) {
     try {
-        if (!confirm('¿Estás seguro de que deseas aprobar este reembolso?')) {
+        if (!confirm('Are you sure you want to approve this refund?')) {
             return;
         }
 
-        // Obtener datos del reembolso
+        // Get refund data
         const refundDoc = await db.collection('refund_requests').doc(refundId).get();
         if (!refundDoc.exists) {
-            throw new Error('Reembolso no encontrado');
+            throw new Error('Refund not found');
         }
 
         const refundData = refundDoc.data();
         if (refundData.status !== 'pending') {
-            throw new Error('Este reembolso ya ha sido procesado');
+            throw new Error('This refund has already been processed');
         }
 
-        // Actualizar estado del reembolso
+        // Update refund status
         await db.collection('refund_requests').doc(refundId).update({
             status: 'approved',
             approvedAt: firebase.firestore.FieldValue.serverTimestamp(),
             approvedBy: auth.currentUser.uid
         });
 
-        // Recargar reembolsos
+        // Reload refunds
         await loadRefunds();
 
     } catch (error) {
-        console.error('Error al aprobar reembolso:', error);
-        alert('Error al aprobar reembolso: ' + error.message);
+        console.error('Error approving refund:', error);
+        alert('Error approving refund: ' + error.message);
     }
 }
 
-// Rechazar reembolso
+// Reject refund
 async function rejectRefund(refundId) {
     try {
-        if (!confirm('¿Estás seguro de que deseas rechazar este reembolso?')) {
+        if (!confirm('Are you sure you want to reject this refund?')) {
             return;
         }
 
-        // Obtener datos del reembolso
+        // Get refund data
         const refundDoc = await db.collection('refund_requests').doc(refundId).get();
         if (!refundDoc.exists) {
-            throw new Error('Reembolso no encontrado');
+            throw new Error('Refund not found');
         }
 
         const refundData = refundDoc.data();
         if (refundData.status !== 'pending') {
-            throw new Error('Este reembolso ya ha sido procesado');
+            throw new Error('This refund has already been processed');
         }
 
-        // Actualizar estado del reembolso
+        // Update refund status
         await db.collection('refund_requests').doc(refundId).update({
             status: 'rejected',
             rejectedAt: firebase.firestore.FieldValue.serverTimestamp(),
             rejectedBy: auth.currentUser.uid
         });
 
-        // Recargar reembolsos
+        // Reload refunds
         await loadRefunds();
 
     } catch (error) {
-        console.error('Error al rechazar reembolso:', error);
-        alert('Error al rechazar reembolso: ' + error.message);
+        console.error('Error rejecting refund:', error);
+        alert('Error rejecting refund: ' + error.message);
     }
 }
 
-// Modal de comprobante de reembolso
+// Refund proof modal
 function openRefundProofModal(refundId) {
     currentRefundId = refundId;
     const modal = document.getElementById('refundProofModal');
@@ -165,7 +165,7 @@ function closeRefundProofModal() {
     currentRefundId = null;
 }
 
-// Preview de imagen
+// Image preview
 document.getElementById('refundProofFile').addEventListener('change', function(event) {
     const file = event.target.files[0];
     if (file) {
@@ -179,7 +179,7 @@ document.getElementById('refundProofFile').addEventListener('change', function(e
     }
 });
 
-// Convertir imagen a base64
+// Convert image to base64
 function getBase64(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -189,17 +189,17 @@ function getBase64(file) {
     });
 }
 
-// Manejo del formulario de comprobante
+// Handle proof form
 document.getElementById('refundProofForm').addEventListener('submit', async function(event) {
     event.preventDefault();
     
     try {
         const file = document.getElementById('refundProofFile').files[0];
         if (!file) {
-            throw new Error('Por favor selecciona una imagen');
+            throw new Error('Please select an image');
         }
 
-        // Convertir imagen a base64
+        // Convert image to base64
         const reader = new FileReader();
         const base64Promise = new Promise((resolve, reject) => {
             reader.onload = () => resolve(reader.result);
@@ -208,10 +208,10 @@ document.getElementById('refundProofForm').addEventListener('submit', async func
         reader.readAsDataURL(file);
         const imageUrl = await base64Promise;
 
-        // Actualizar reembolso con el comprobante
+        // Update refund with proof
         await completeRefundWithProof(currentRefundId, imageUrl);
 
-        // Cerrar modal y recargar lista
+        // Close modal and reload list
         closeRefundProofModal();
         await loadRefunds();
 
@@ -221,18 +221,18 @@ document.getElementById('refundProofForm').addEventListener('submit', async func
     }
 });
 
-// Completar reembolso con comprobante
+// Complete refund with proof
 async function completeRefundWithProof(refundId, imageUrl) {
     try {
-        // Obtener datos del reembolso
+        // Get refund data
         const refundDoc = await db.collection('refund_requests').doc(refundId).get();
         if (!refundDoc.exists) {
-            throw new Error('Reembolso no encontrado');
+            throw new Error('Refund not found');
         }
 
         const refundData = refundDoc.data();
         
-        // Actualizar reembolso
+        // Update refund
         await db.collection('refund_requests').doc(refundId).update({
             status: 'completed',
             completedAt: firebase.firestore.FieldValue.serverTimestamp(),
@@ -240,7 +240,7 @@ async function completeRefundWithProof(refundId, imageUrl) {
             proofUrl: imageUrl
         });
 
-        // Actualizar estado de la campaña
+        // Update campaign status
         if (refundData.campaignId) {
             const campaignDoc = await db.collection('campaigns').doc(refundData.campaignId).get();
             await db.collection('campaigns').doc(refundData.campaignId).update({
@@ -250,11 +250,11 @@ async function completeRefundWithProof(refundId, imageUrl) {
             });
         }
 
-        // Crear mensaje en el chat
+        // Create message in chat
         if (refundData.requestId) {
             const message = {
                 type: 'refund_proof',
-                text: 'Comprobante de reembolso',
+                text: 'Refund proof',
                 imageUrl: imageUrl,
                 userId: window.auth.currentUser.uid,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -275,7 +275,7 @@ async function completeRefundWithProof(refundId, imageUrl) {
 // Check if user is admin
 async function checkAdmin() {
     try {
-        // Esperar a que la autenticación se complete
+        // Wait for authentication to complete
         await new Promise((resolve) => {
             const unsubscribe = auth.onAuthStateChanged((user) => {
                 unsubscribe();
@@ -311,7 +311,7 @@ async function checkAdmin() {
     }
 }
 
-// Inicializar página
+// Initialize page
 document.addEventListener('DOMContentLoaded', () => {
     checkAdmin();
     
@@ -322,18 +322,18 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('statusFilter').addEventListener('change', handleFilters);
     document.getElementById('sortOrder').addEventListener('change', handleFilters);
     
-    // Cargar reembolsos iniciales
+    // Load initial refunds
     loadRefunds();
 });
 
-// Búsqueda y filtros
+// Search and filters
 function handleSearch(event) {
-    // Implementar búsqueda
+    // Implement search
     console.log('Search:', event.target.value);
 }
 
 function handleFilters() {
-    // Implementar filtros
+    // Implement filters
     console.log('Filters changed');
 }
 

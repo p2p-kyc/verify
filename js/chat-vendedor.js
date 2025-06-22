@@ -37,7 +37,7 @@ async function createChargeButton(campaign) {
         }
 
         // Obtener cuentas cobradas
-        const cuentasCobradas = await getCuentasCobradas(campaign.id);
+        const cuentasCobradas = await getChargedAccounts(campaign.id);
         if (typeof cuentasCobradas !== 'number') {
             throw new Error('Error al obtener cuentas cobradas');
         }
@@ -217,6 +217,16 @@ async function loadSellerChats() {
             const lastMessage = await getLastMessage(request.id);
             const statusClass = request.campaignData.status === 'active' ? 'active' : 'completed';
             
+            let lastMessageText = 'No hay mensajes';
+            if (lastMessage) {
+                if (lastMessage.type === 'image') {
+                    lastMessageText = 'Imagen';
+                } else if (lastMessage.type === 'payment_proof') {
+                    lastMessageText = 'Comprobante de pago';
+                } else if (lastMessage.text) {
+                    lastMessageText = lastMessage.text;
+                }
+            }
             return `
                 <div class="chat-item ${statusClass}" onclick="openChat('${request.id}')" data-request-id="${request.id}">
                     <div class="chat-item-avatar">
@@ -229,7 +239,7 @@ async function loadSellerChats() {
                         </div>
                         <div class="chat-item-info">
                             <p class="campaign-name">${request.campaignData.name}</p>
-                            <p class="last-message">${lastMessage ? lastMessage.text : 'No hay mensajes'}</p>
+                            <p class="last-message">${lastMessageText}</p>
                         </div>
                     </div>
                 </div>
@@ -328,7 +338,7 @@ async function openChat(requestId) {
         // Mostrar información del chat
         document.getElementById('chatTitle').textContent = userData.name || userData.email;
         // Obtener cuentas cobradas y actualizar información
-        const cuentasCobradas = await getCuentasCobradas(campaignDoc.id);
+        const cuentasCobradas = await getChargedAccounts(campaignDoc.id);
         const cuentasDisponibles = campaignData.accountCount - cuentasCobradas;
 
         // Verificar si la campaña debe estar completada
@@ -610,10 +620,10 @@ async function appendMessage(message) {
 async function getUserData(userId) {
     try {
         const userDoc = await window.db.collection('users').doc(userId).get();
-        return userDoc.exists ? userDoc.data() : { email: 'Usuario desconocido' };
+        return userDoc.exists ? userDoc.data() : { email: 'Unknown User' };
     } catch (error) {
         console.error('Error getting user data:', error);
-        return { email: 'Error al cargar usuario' };
+        return { email: 'Error loading user' };
     }
 }
 
@@ -621,137 +631,95 @@ async function getUserData(userId) {
 async function requestPayment() {
     try {
         if (!activeRequest?.campaign?.id) {
-            alert('Por favor selecciona un chat primero');
+            alert('Please select a chat first');
             return;
         }
 
-        // Verificar estado de la campaña
+        // Check campaign status
         const campaignDoc = await window.db.collection('campaigns')
             .doc(activeRequest.campaign.id)
             .get();
 
         if (!campaignDoc.exists) {
-            throw new Error('Campaña no encontrada');
+            throw new Error('Campaign not found');
         }
 
         const campaignData = campaignDoc.data();
-        console.log('Estado actual de la campaña:', {
+        console.log('Current campaign state:', {
             id: campaignDoc.id,
             status: campaignData.status,
             paymentStatus: campaignData.paymentStatus
         });
 
-        // Verificar el estado de pago
+        // Check payment status
         if (campaignData.paymentStatus !== 'approved') {
-            console.error('Error de estado de pago:', campaignData.paymentStatus);
-            throw new Error('El pago de la campaña no está aprobado');
+            console.error('Payment status error:', campaignData.paymentStatus);
+            throw new Error('The campaign payment is not approved');
         }
 
-        // Verificar estado de la campaña y cuentas disponibles
-        const cuentasCobradas = await getCuentasCobradas(activeRequest.campaign.id);
-        const cuentasDisponibles = campaignData.accountCount - cuentasCobradas;
+        // Check campaign status and available accounts
+        const chargedAccounts = await getChargedAccounts(activeRequest.campaign.id);
+        const availableAccounts = campaignData.accountCount - chargedAccounts;
         
-        if (cuentasDisponibles <= 0) {
-            throw new Error('No hay más cuentas disponibles para cobrar en esta campaña');
+        if (availableAccounts <= 0) {
+            throw new Error('No more accounts available to charge in this campaign');
         }
 
-        console.log('Estado de cuentas:', {
+        console.log('Account status:', {
             total: campaignData.accountCount,
-            cobradas: cuentasCobradas,
-            disponibles: cuentasDisponibles
+            charged: chargedAccounts,
+            available: availableAccounts
         });
 
-        // Mostrar el modal de cobro
+        // Show the charge modal
         const modal = document.getElementById('chargeModal');
         const confirmBtn = document.getElementById('confirmCharge');
         const cancelBtn = document.getElementById('cancelCharge');
         const closeBtn = modal.querySelector('.close');
 
-        // Esperar la confirmación del usuario usando Promise
-        const paymentRequest = await new Promise((resolve, reject) => {
-            // Mostrar el modal y configurar datos
-            openChargeModal(campaignData);
+        const accountsToCharge = await new Promise((resolve, reject) => {
+            openChargeModal(campaignData, availableAccounts);
 
-            // Manejar confirmación
-            confirmBtn.onclick = async () => {
-                const accountsToCharge = parseInt(document.getElementById('accountsToCharge').value);
-                const availableAccounts = cuentasDisponibles;
-
-                if (accountsToCharge < 1 || accountsToCharge > availableAccounts) {
-                    document.getElementById('accountValidation').textContent = 'Cantidad de cuentas inválida';
-                    return;
+            confirmBtn.onclick = () => {
+                const numAccounts = parseInt(document.getElementById('accountsToCharge').value);
+                if (numAccounts > 0 && numAccounts <= availableAccounts) {
+                    resolve(numAccounts);
+                    closeChargeModal();
+                } else {
+                    document.getElementById('accountValidation').textContent = 'Invalid number of accounts';
                 }
-
-                // Calcular el monto
-                const amountPerAccount = campaignData.pricePerAccount;
-                const totalAmount = amountPerAccount * accountsToCharge;
-
-                // Crear solicitud de pago
-                const request = {
-                    sellerId: currentUser.uid,
-                    buyerId: campaignData.createdBy,
-                    campaignId: activeRequest.campaign.id,
-                    requestId: activeRequest.id,
-                    amount: totalAmount,
-                    accountsRequested: accountsToCharge,
-                    pricePerAccount: amountPerAccount,
-                    currency: 'USDT',
-                    status: 'pending',
-                    createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
-                };
-
-                closeChargeModal();
-                resolve(request);
             };
-
-            // Manejar cancelación
-            const handleCancel = () => {
-                closeChargeModal();
-                reject(new Error('Operación cancelada'));
-            };
-
-            cancelBtn.onclick = handleCancel;
-            closeBtn.onclick = handleCancel;
-            window.onclick = (event) => {
-                if (event.target === modal) handleCancel();
-            };
+            cancelBtn.onclick = () => reject(new Error('Operation cancelled'));
+            closeBtn.onclick = () => reject(new Error('Operation cancelled'));
         });
 
-        // Actualizar estado del botón
+        // If we get here, the user has confirmed the number of accounts.
+        const totalAmount = campaignData.pricePerAccount * accountsToCharge;
+        const paymentRequest = {
+            sellerId: currentUser.uid,
+            buyerId: campaignData.createdBy, // Correct buyerId
+            campaignId: activeRequest.campaign.id,
+            requestId: activeRequest.id,
+            amount: totalAmount,
+            accountsRequested: accountsToCharge,
+            pricePerAccount: campaignData.pricePerAccount,
+            currency: 'USDT',
+            status: 'pending',
+            createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
+        };
+
         const button = headerActions.querySelector('button');
         if (button) {
-            button.textContent = 'Procesando...';
+            button.textContent = 'Processing...';
             button.disabled = true;
-            button.style.opacity = '0.7';
-            button.style.cursor = 'wait';
         }
 
-        // Iniciar transacción de Firestore
         const batch = window.db.batch();
-
-        // Crear referencia para la solicitud de pago
         const paymentRequestRef = window.db.collection('payment_requests').doc();
-        
-        // Obtener el buyerId del request
-        const requestDoc = await window.db.collection('requests').doc(activeRequest.id).get();
-        if (!requestDoc.exists) {
-            throw new Error('Request no encontrado');
-        }
-        const requestData = requestDoc.data();
-        
-        // Agregar datos adicionales al payment request
-        paymentRequest.campaignId = activeRequest.campaign.id;
-        paymentRequest.requestId = activeRequest.id;
-        paymentRequest.buyerId = requestData.userId; // Usar el userId del request
-        paymentRequest.sellerId = currentUser.uid;
-        paymentRequest.status = 'pending';
-        paymentRequest.createdAt = window.firebase.firestore.FieldValue.serverTimestamp();
-        
         batch.set(paymentRequestRef, paymentRequest);
 
-        // Crear mensaje de cobro
         const message = {
-            text: `💰 El vendedor ha solicitado el pago de $${paymentRequest.amount} ${paymentRequest.currency} por ${paymentRequest.accountsRequested} cuenta${paymentRequest.accountsRequested > 1 ? 's' : ''} ($${paymentRequest.pricePerAccount} ${paymentRequest.currency} c/u)`,
+            text: `💰 The seller has requested payment of $${paymentRequest.amount} ${paymentRequest.currency} for ${paymentRequest.accountsRequested} account${paymentRequest.accountsRequested > 1 ? 's' : ''} ($${paymentRequest.pricePerAccount} ${paymentRequest.currency} each)`,
             userId: currentUser.uid,
             type: 'charge',
             amount: paymentRequest.amount,
@@ -760,47 +728,21 @@ async function requestPayment() {
             createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
         };
 
-        // Agregar mensaje al batch
-        const messageRef = window.db.collection('requests')
-            .doc(activeRequest.id)
-            .collection('messages')
-            .doc();
+        const messageRef = window.db.collection('requests').doc(activeRequest.id).collection('messages').doc();
         batch.set(messageRef, message);
-
-        // Actualizar estado de la campaña en el batch
-        const campaignRef = window.db.collection('campaigns')
-            .doc(activeRequest.campaign.id);
-        batch.update(campaignRef, {
-            lastPaymentRequestAt: window.firebase.firestore.FieldValue.serverTimestamp(),
-            lastPaymentRequestId: paymentRequestRef.id
-        });
-
-        // Ejecutar todas las operaciones en una transacción
+        
         await batch.commit();
 
-        // Restaurar estado del botón
-        if (button) {
-            button.textContent = 'Cobrar cuenta';
-            button.disabled = false;
-            button.style.opacity = '1';
-            button.style.cursor = 'pointer';
-        }
-
     } catch (error) {
-        console.error('Error al procesar el pago:', error);
-        
-        // No mostrar alerta si fue cancelación voluntaria
-        if (error.message !== 'Operación cancelada') {
-            alert('Error al procesar el pago: ' + error.message);
+        if (error.message !== 'Operation cancelled') {
+            console.error('Error processing payment:', error);
+            alert('Error processing payment: ' + error.message);
         }
-        
-        // Restaurar estado del botón
+    } finally {
+        // Restore button state regardless of outcome
         const button = headerActions.querySelector('button');
         if (button) {
-            button.textContent = 'Cobrar cuenta';
-            button.disabled = false;
-            button.style.opacity = '1';
-            button.style.cursor = 'pointer';
+            await createChargeButton(activeRequest.campaign);
         }
     }
 }
@@ -868,7 +810,7 @@ async function handlePaymentResponse(paymentRequestId, response) {
 
         // Si el pago fue aprobado, actualizar el contador y verificar si la campaña debe finalizar
         if (response === 'approved') {
-            const cuentasCobradas = await getCuentasCobradas(paymentRequestData.campaignId);
+            const cuentasCobradas = await getChargedAccounts(paymentRequestData.campaignId);
             const campaignDoc = await window.db.collection('campaigns').doc(paymentRequestData.campaignId).get();
             const campaignData = campaignDoc.data();
             const cuentasDisponibles = campaignData.accountCount - cuentasCobradas;
@@ -999,10 +941,9 @@ function formatDate(timestamp) {
 }
 
 // Abrir modal de cobro
-function openChargeModal(campaignData) {
+function openChargeModal(campaignData, availableAccounts) {
     const modal = document.getElementById('chargeModal');
     const accountsInput = document.getElementById('accountsToCharge');
-    const availableAccounts = campaignData.accountCount - (campaignData.verificationCount || 0);
     
     // Actualizar información en el modal
     document.getElementById('availableAccounts').textContent = availableAccounts;
@@ -1023,7 +964,7 @@ function openChargeModal(campaignData) {
         
         // Validar el número de cuentas
         if (accounts < 1 || accounts > availableAccounts) {
-            document.getElementById('accountValidation').textContent = 'Cantidad de cuentas inválida';
+            document.getElementById('accountValidation').textContent = 'Invalid number of accounts';
         } else {
             document.getElementById('accountValidation').textContent = '';
         }
@@ -1045,10 +986,10 @@ function scrollToBottom() {
 }
 
 // Obtener el número de cuentas cobradas para una campaña
-async function getCuentasCobradas(campaignId) {
+async function getChargedAccounts(campaignId) {
     try {
         if (!campaignId) {
-            console.error('Error: campaignId es undefined en getCuentasCobradas');
+            console.error('Error: campaignId es undefined en getChargedAccounts');
             return 0;
         }
 

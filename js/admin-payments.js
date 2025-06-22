@@ -5,14 +5,26 @@ async function loadPayments() {
             .orderBy('createdAt', 'desc')
             .get();
 
-        // Almacenar pagos en currentPayments
-        currentPayments = paymentsSnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
+        // Get user and campaign data for all payments
+        const payments = await Promise.all(paymentsSnapshot.docs.map(async (doc) => {
+            const payment = doc.data();
+            const [sellerData, buyerData, campaignData] = await Promise.all([
+                getUserData(payment.sellerId),
+                getUserData(payment.buyerId),
+                getCampaignData(payment.campaignId)
+            ]);
+            return {
+                id: doc.id,
+                ...payment,
+                sellerEmail: sellerData?.email || 'N/A',
+                buyerEmail: buyerData?.email || 'N/A',
+                campaignName: campaignData?.name || 'N/A'
+            };
         }));
-
-        // Aplicar filtros actuales
+        
+        currentPayments = payments;
         filterAndDisplayPayments();
+
     } catch (error) {
         console.error('Error loading payments:', error);
         const paymentsContainer = document.getElementById('paymentsList');
@@ -33,9 +45,9 @@ async function loadPayments() {
 function createPaymentRow(id, payment) {
     const row = document.createElement('tr');
     
-    // Formatear fecha
+    // Format date
     const createdAt = payment.createdAt?.toDate ? 
-        payment.createdAt.toDate().toLocaleDateString('es-ES', {
+        payment.createdAt.toDate().toLocaleDateString('en-US', {
             year: 'numeric',
             month: '2-digit',
             day: '2-digit',
@@ -45,9 +57,9 @@ function createPaymentRow(id, payment) {
 
     row.innerHTML = `
         <td class="id-cell">${id.slice(-6)}</td>
-        <td>${payment.campaignId || 'N/A'}</td>
-        <td>${payment.sellerId || 'N/A'}</td>
-        <td>${payment.buyerId || 'N/A'}</td>
+        <td>${payment.campaignName || 'N/A'}</td>
+        <td>${payment.sellerEmail}</td>
+        <td>${payment.buyerEmail}</td>
         <td>${payment.accountsRequested || 0}</td>
         <td class="amount-cell">
             $${payment.amount?.toFixed(2) || '0.00'} ${payment.currency || 'USD'}
@@ -233,7 +245,7 @@ async function completePaymentWithProof(paymentId, imageUrl) {
         const messageRef = requestRef.collection('messages').doc();
         batch.set(messageRef, {
             type: 'system',
-            text: '✅ El administrador ha aprobado el pago',
+            text: '✅ The administrator has approved the payment',
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
 
@@ -307,8 +319,8 @@ async function handleAppeal(paymentId, approve) {
 
         batch.set(messageRef, {
             text: approve 
-                ? '👍 El administrador ha aprobado la apelación del pago' 
-                : '❌ El administrador ha rechazado la apelación del pago',
+                ? '👍 The administrator has approved the appeal for the payment' 
+                : '❌ The administrator has rejected the appeal for the payment',
             type: 'appeal_response',
             userId: window.auth.currentUser.uid,
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
@@ -330,11 +342,11 @@ async function handleAppeal(paymentId, approve) {
 
     } catch (error) {
         console.error('Error handling appeal:', error);
-        alert('Error al procesar la apelación: ' + error.message);
+        alert('Error processing appeal: ' + error.message);
     }
 }
 
-// Abrir chat
+// Open chat
 function openChat(requestId) {
     window.open(`chat-admin.html?requestId=${requestId}`, '_blank');
 }
@@ -363,7 +375,7 @@ window.auth.onAuthStateChanged(async (user) => {
     }
 });
 
-// Variables de paginación y filtrado
+// Pagination and filtering variables
 let currentPayments = [];
 let currentPage = 1;
 const ITEMS_PER_PAGE = 10;
@@ -411,16 +423,17 @@ function filterAndDisplayPayments() {
 
     let filtered = currentPayments;
 
-    // Aplicar búsqueda
+    // Apply search
     if (searchTerm) {
         filtered = filtered.filter(payment => 
             payment.id.toLowerCase().includes(searchTerm) ||
-            payment.buyerId?.toLowerCase().includes(searchTerm) ||
-            payment.sellerId?.toLowerCase().includes(searchTerm)
+            payment.campaignName?.toLowerCase().includes(searchTerm) ||
+            payment.buyerEmail?.toLowerCase().includes(searchTerm) ||
+            payment.sellerEmail?.toLowerCase().includes(searchTerm)
         );
     }
 
-    // Aplicar filtro de fecha
+    // Apply date filter
     if (dateFilter !== 'all') {
         const now = new Date();
         const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -445,12 +458,12 @@ function filterAndDisplayPayments() {
         });
     }
 
-    // Aplicar filtro de estado
+    // Apply status filter
     if (statusFilter !== 'all') {
         filtered = filtered.filter(payment => payment.status === statusFilter);
     }
 
-    // Aplicar ordenamiento
+    // Apply sorting
     filtered.sort((a, b) => {
         switch(sortOrder) {
             case 'newest':
@@ -462,15 +475,15 @@ function filterAndDisplayPayments() {
         }
     });
 
-    // Actualizar controles de paginación
+    // Update pagination controls
     updatePaginationControls(filtered.length);
 
-    // Aplicar paginación
+    // Apply pagination
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     const endIndex = startIndex + ITEMS_PER_PAGE;
     const pagedItems = filtered.slice(startIndex, endIndex);
 
-    // Mostrar resultados
+    // Show results
     const paymentsContainer = document.getElementById('paymentsList');
     paymentsContainer.innerHTML = '';
 
@@ -494,37 +507,67 @@ function filterAndDisplayPayments() {
     });
 }
 
-// Aprobar pago
+// Function to get campaign data
+async function getCampaignData(campaignId) {
+    if (!campaignId) return null;
+    try {
+        const campaignDoc = await window.db.collection('campaigns').doc(campaignId).get();
+        if (campaignDoc.exists) {
+            return campaignDoc.data();
+        }
+        return null;
+    } catch (error) {
+        console.error(`Error getting campaign data for ${campaignId}:`, error);
+        return null;
+    }
+}
+
+// Function to get user data
+async function getUserData(userId) {
+    if (!userId) return null;
+    try {
+        const userDoc = await window.db.collection('users').doc(userId).get();
+        if (userDoc.exists) {
+            return userDoc.data();
+        }
+        return null;
+    } catch (error) {
+        console.error(`Error getting user data for ${userId}:`, error);
+        return null;
+    }
+}
+
+// Approve payment
 async function approvePayment(paymentId) {
     try {
-        if (!confirm('¿Estás seguro de que deseas aprobar este pago?')) {
+        if (!confirm('Are you sure you want to approve this payment?')) {
             return;
         }
 
-        // Obtener datos del pago
+        // Get payment data
         const paymentDoc = await window.db.collection('payment_requests').doc(paymentId).get();
         if (!paymentDoc.exists) {
-            throw new Error('Pago no encontrado');
+            throw new Error('Payment not found');
         }
 
         const paymentData = paymentDoc.data();
         if (paymentData.status !== 'pending') {
-            throw new Error('Este pago ya ha sido procesado');
+            throw new Error('This payment has already been processed');
         }
 
-        // Actualizar estado del pago
+        // Update payment status
         await window.db.collection('payment_requests').doc(paymentId).update({
             status: 'approved',
             approvedAt: window.firebase.firestore.FieldValue.serverTimestamp(),
             approvedBy: window.auth.currentUser.uid
         });
 
-        // Recargar pagos
+        // Reload payments
         await loadPayments();
 
     } catch (error) {
-        console.error('Error al aprobar pago:', error);
-        alert('Error al aprobar pago: ' + error.message);
+        console.error('Error approving payment:', error);
+        alert('Error approving payment: ' + error.message);
     }
 }
 

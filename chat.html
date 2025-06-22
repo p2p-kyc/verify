@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,15 +13,15 @@
 <body>
     <div class="container">
         <div class="chat-container">
-            <!-- Lista de chats -->
+            <!-- Chat list -->
             <div class="chat-list">
-                <h2>Mis Chats</h2>
+                <h2>My Chats</h2>
                 <div id="chatsList">
-                    <!-- Los chats se cargarán aquí -->
+                    <!-- Chats will be loaded here -->
                 </div>
             </div>
 
-            <!-- Área de chat activo -->
+            <!-- Active chat area -->
             <div class="chat-area">
                 <div class="chat-header">
                     <div class="header-content">
@@ -30,27 +30,27 @@
                                 <i class="fas fa-user"></i>
                             </div>
                             <div class="user-details">
-                                <h3 id="chatTitle">Selecciona un chat</h3>
+                                <h3 id="chatTitle">Select a chat</h3>
                             </div>
                         </div>
 
-                        <!-- Modal de cobro -->
+                        <!-- Charge modal -->
                         <div id="chargeModal" class="modal">
                             <div class="modal-content">
                                 <div class="modal-header">
-                                    <h3>Información de la campaña</h3>
+                                    <h3>Campaign Information</h3>
                                     <button class="close-modal" onclick="closeChargeModal()">
                                         <i class='bx bx-x'></i>
                                     </button>
                                 </div>
                                 <div id="modalCampaignInfo" class="modal-body">
-                                    <!-- La información de la campaña se cargará aquí -->
+                                    <!-- Campaign information will be loaded here -->
                                 </div>
                                 <div class="modal-footer">
-                                    <button class="btn-secondary" onclick="closeChargeModal()">Cancelar</button>
+                                    <button class="btn-secondary" onclick="closeChargeModal()">Cancel</button>
                                     <button id="confirmChargeButton" class="btn-charge" onclick="handleCharge()">
                                         <i class='bx bx-check'></i>
-                                        <span>Confirmar cobro</span>
+                                        <span>Confirm charge</span>
                                     </button>
                                 </div>
                             </div>
@@ -58,31 +58,31 @@
                     </div>
                 </div>
 
-                <!-- Botones de acción -->
+                <!-- Action buttons -->
                 <div class="action-bar">
                     <div class="payment-action">
-                        <!-- Botón para vendedor -->
+                        <!-- Button for seller -->
                         <button id="chargeButton" class="btn-action seller-action" onclick="showChargeModal()">
                             <i class='bx bx-dollar'></i>
-                            <span>Cobrar cuenta</span>
+                            <span>Charge account</span>
                         </button>
-                        <!-- Botón para creador -->
+                        <!-- Button for creator -->
                         <button id="finishButton" class="btn-action creator-action">
                             <i class='bx bx-check-circle'></i>
-                            <span>Terminar campaña</span>
+                            <span>Finish campaign</span>
                         </button>
                     </div>
                 </div>
 
                 <div id="messagesContainer" class="messages-container">
-                    <!-- Los mensajes se cargarán aquí -->
+                    <!-- Messages will be loaded here -->
                 </div>
 
                 <form id="messageForm" class="chat-input">
-                    <input type="text" id="messageInput" placeholder="Escribe tu mensaje..." required>
+                    <input type="text" id="messageInput" placeholder="Type your message..." required>
                     <button type="submit" id="sendButton" class="btn-send">
                         <i class='bx bx-send'></i>
-                        <span>Enviar</span>
+                        <span>Send</span>
                     </button>
                 </form>
             </div>

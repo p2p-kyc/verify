@@ -717,50 +717,50 @@
         </div>
     </div>
 
-    <!-- Modal de Cobro -->
+    <!-- Charge Modal -->
     <div id="chargeModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>Solicitar Pago de Cuentas</h2>
+                <h2>Request Account Payment</h2>
                 <span class="close">&times;</span>
             </div>
             <div class="modal-body">
                 <div class="warning-message">
                     <i class='bx bx-info-circle'></i>
                     <div class="warning-text">
-                        <strong>Importante:</strong>
-                        <p>Para mantener un control adecuado de las cuentas y evitar exceder el límite de la campaña, te recomendamos:</p>
+                        <strong>Important:</strong>
+                        <p>To maintain proper control of the accounts and avoid exceeding the campaign limit, we recommend:</p>
                         <ul>
-                            <li>Cobrar las cuentas una por una</li>
-                            <li>Esperar a que el comprador verifique cada cuenta antes de enviar la siguiente</li>
-                            <li>Esto asegura que no haya más cuentas en circulación de las necesarias</li>
+                            <li>Charging for the accounts one by one</li>
+                            <li>Waiting for the buyer to verify each account before sending the next one</li>
+                            <li>This ensures that there are no more accounts in circulation than necessary</li>
                         </ul>
                     </div>
                 </div>
                 <div class="input-group">
-                    <label for="accountsToCharge">Número de cuentas a cobrar:</label>
+                    <label for="accountsToCharge">Number of accounts to charge:</label>
                     <div class="input-with-info">
                         <input type="number" id="accountsToCharge" min="1" value="1">
                         <div class="input-info">
-                            <span class="accounts-info">Cuentas disponibles: <strong><span id="availableAccounts">0</span></strong></span>
+                            <span class="accounts-info">Available accounts: <strong><span id="availableAccounts">0</span></strong></span>
                             <span class="validation-message" id="accountValidation"></span>
                         </div>
                     </div>
                 </div>
                 <div class="price-info">
                     <div class="input-group">
-                        <label>Precio por cuenta:</label>
+                        <label>Price per account:</label>
                         <span class="price"><span id="pricePerAccount">0</span> USDT</span>
                     </div>
                     <div class="input-group total-amount">
-                        <label>Total a cobrar:</label>
+                        <label>Total to charge:</label>
                         <span class="price highlight"><span id="totalAmount">0</span> USDT</span>
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button id="cancelCharge" class="button secondary">Cancelar</button>
-                <button id="confirmCharge" class="button primary">Confirmar Cobro</button>
+                <button id="cancelCharge" class="button secondary">Cancel</button>
+                <button id="confirmCharge" class="button primary">Confirm Charge</button>
             </div>
         </div>
     </div>

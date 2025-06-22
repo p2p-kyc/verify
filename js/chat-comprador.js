@@ -139,6 +139,16 @@ async function loadBuyerChats() {
             const lastMessage = await getLastMessage(request.id);
             const statusClass = request.campaignData.status === 'active' ? 'active' : 'completed';
 
+            let lastMessageText = 'No hay mensajes';
+            if (lastMessage) {
+                if (lastMessage.type === 'image') {
+                    lastMessageText = 'Imagen';
+                } else if (lastMessage.type === 'payment_proof') {
+                    lastMessageText = 'Comprobante de pago';
+                } else if (lastMessage.text) {
+                    lastMessageText = lastMessage.text;
+                }
+            }
             return `
                 <div class="chat-item ${statusClass}" onclick="openChat('${request.id}')" data-request-id="${request.id}">
                     <div class="chat-item-avatar">
@@ -151,7 +161,7 @@ async function loadBuyerChats() {
                         </div>
                         <div class="chat-item-info">
                             <p class="campaign-name">${request.campaignData.name}</p>
-                            <p class="last-message">${lastMessage ? lastMessage.text : 'No hay mensajes'}</p>
+                            <p class="last-message">${lastMessageText}</p>
                         </div>
                     </div>
                 </div>

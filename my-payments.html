@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Payments</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+</head>
+<body class="dark-theme">
+    <nav class="navbar">
+        <div class="navbar-left">
+            <a href="dashboard.html" class="nav-link"><i class='bx bx-arrow-back'></i></a>
+            <span>My Payments</span>
+        </div>
+    </nav>
+    <main class="main-feed">
+        <h2>My Payments</h2>
+        <div id="paymentsList" class="payments-list">
+            <div class="loading">Loading payments...</div>
+        </div>
+    </main>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/my-payments.js"></script>
+</body>
+</html> 

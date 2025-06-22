@@ -1,9 +1,9 @@
-// Variables globales
+// Global variables
 let currentUser = null;
 let activeRequest = null;
 let messagesListener = null;
 
-// Elementos del DOM
+// DOM elements
 const messageForm = document.getElementById('messageForm');
 const messageInput = document.getElementById('messageInput');
 const messagesContainer = document.getElementById('messagesContainer');
@@ -11,7 +11,7 @@ const messagesContainer = document.getElementById('messagesContainer');
 // Event listeners
 messageForm.addEventListener('submit', handleMessageSubmit);
 
-// Escuchar cambios de autenticación
+// Listen for authentication changes
 auth.onAuthStateChanged(async user => {
     if (!user) {
         window.location.href = 'index.html';
@@ -21,7 +21,7 @@ auth.onAuthStateChanged(async user => {
     currentUser = user;
     loadChats();
 
-    // Si hay un requestId en la URL, abrir ese chat
+    // If there's a requestId in the URL, open that chat
     const urlParams = new URLSearchParams(window.location.search);
     const requestId = urlParams.get('requestId');
     if (requestId) {
@@ -29,28 +29,28 @@ auth.onAuthStateChanged(async user => {
     }
 });
 
-// Cargar lista de chats
+// Load chat list
 async function loadChats() {
     try {
         const chatsList = document.getElementById('chatsList');
 
-        // Buscar todas las solicitudes aceptadas donde el usuario está involucrado
-        // Obtener todas las campañas del usuario (como comprador)
+        // Search for all accepted requests where the user is involved
+        // Get all user campaigns (as buyer)
         const createdCampaigns = await db.collection('campaigns')
             .where('createdBy', '==', currentUser.uid)
             .get();
 
-        // Obtener todas las solicitudes donde el usuario es vendedor
+        // Get all requests where the user is seller
         const sellerRequests = await db.collection('requests')
             .where('sellerId', '==', currentUser.uid)
             .get();
 
         let allRequests = [];
 
-        // Agregar solicitudes donde el usuario es vendedor
+        // Add requests where the user is seller
         allRequests = allRequests.concat(sellerRequests.docs);
 
-        // Agregar solicitudes de las campañas creadas por el usuario
+        // Add requests from campaigns created by the user
         if (!createdCampaigns.empty) {
             const campaignIds = createdCampaigns.docs.map(doc => doc.id);
             const buyerRequests = await db.collection('requests')
@@ -60,7 +60,7 @@ async function loadChats() {
         }
 
         if (allRequests.length === 0) {
-            chatsList.innerHTML = '<p class="no-data">No hay chats disponibles</p>';
+            chatsList.innerHTML = '<p class="no-data">No chats available</p>';
             return;
         }
 
@@ -69,7 +69,7 @@ async function loadChats() {
             const campaignDoc = await db.collection('campaigns').doc(requestData.campaignId).get();
             const campaignData = { id: campaignDoc.id, ...campaignDoc.data() };
             
-            // Obtener datos del otro usuario
+            // Get other user data
             const otherUserId = requestData.userId === currentUser.uid ? 
                 campaignData.createdBy : requestData.userId;
             const otherUserData = await getUserData(otherUserId);
@@ -81,11 +81,11 @@ async function loadChats() {
 
     } catch (error) {
         console.error('Error loading chats:', error);
-        alert('Error al cargar los chats: ' + error.message);
+        alert('Error loading chats: ' + error.message);
     }
 }
 
-// Crear elemento de la lista de chats
+// Create chat list item
 function createChatListItem(requestId, campaignData, userData) {
     return `
         <div class="chat-item" onclick="openChat('${requestId}')">
@@ -93,26 +93,26 @@ function createChatListItem(requestId, campaignData, userData) {
                 <h4>${userData.name || userData.email}</h4>
                 <p class="campaign-title">${campaignData.name}</p>
                 <span class="chat-status ${campaignData.status}">
-                    ${campaignData.status === 'pending' ? 'Pendiente' : 'Activo'}
+                    ${campaignData.status === 'pending' ? 'Pending' : 'Active'}
                 </span>
             </div>
         </div>
     `;
 }
 
-// Abrir chat por ID de campaña (cuando viene de la URL)
+// Open chat by campaign ID (when coming from URL)
 async function openChatByCampaignId(campaignId) {
     try {
-        // Obtener la campaña
+        // Get the campaign
         const campaignDoc = await db.collection('campaigns').doc(campaignId).get();
         if (!campaignDoc.exists) {
-            throw new Error('Campaña no encontrada');
+            throw new Error('Campaign not found');
         }
 
         const campaignData = campaignDoc.data();
         const isCreator = campaignData.createdBy === currentUser.uid;
 
-        // Construir la consulta según si es creador o no
+        // Build query based on whether it's creator or not
         const requestQuery = db.collection('requests')
             .where('campaignId', '==', campaignId)
             .where(isCreator ? 'status' : 'userId', '==', isCreator ? 'accepted' : currentUser.uid);
@@ -120,25 +120,25 @@ async function openChatByCampaignId(campaignId) {
         const snapshot = await requestQuery.get();
 
         if (snapshot.empty) {
-            throw new Error('No se encontraron chats para esta campaña');
+            throw new Error('No chats found for this campaign');
         }
 
-        // Abrir el primer chat encontrado
+        // Open the first chat found
         openChat(snapshot.docs[0].id);
 
     } catch (error) {
         console.error('Error opening chat:', error);
-        alert('Error al abrir el chat: ' + error.message);
+        alert('Error opening chat: ' + error.message);
     }
 }
 
-// Abrir chat
+// Open chat
 async function openChat(requestId) {
     try {
-        // Obtener datos de la solicitud
+        // Get request data
         const requestDoc = await db.collection('requests').doc(requestId).get();
         if (!requestDoc.exists) {
-            throw new Error('Chat no encontrado');
+            throw new Error('Chat not found');
         }
 
         const requestData = requestDoc.data();
@@ -147,18 +147,18 @@ async function openChat(requestId) {
             ...requestData
         };
 
-        // Obtener datos de la campaña
+        // Get campaign data
         const campaignDoc = await db.collection('campaigns').doc(requestData.campaignId).get();
         if (!campaignDoc.exists) {
-            throw new Error('Campaña no encontrada');
+            throw new Error('Campaign not found');
         }
 
         const campaign = campaignDoc.data();
-        // Obtener referencias a los botones
+        // Get button references
         const chargeButton = document.getElementById('chargeButton');
         const finishButton = document.getElementById('finishButton');
         
-        // Verificar si hay cobro pendiente
+        // Check if there's a pending charge
         const chargeQuery = await db.collection('charges')
             .where('requestId', '==', requestId)
             .where('status', '==', 'pending')
@@ -166,7 +166,7 @@ async function openChat(requestId) {
 
         const buttonDisabled = !chargeQuery.empty;
 
-        // Actualizar información en el modal
+        // Update information in modal
         const modalCampaignInfo = document.getElementById('modalCampaignInfo');
         if (modalCampaignInfo) {
             modalCampaignInfo.innerHTML = `
@@ -175,11 +175,11 @@ async function openChat(requestId) {
                     <div class="campaign-stats">
                         <span class="stat">
                             <i class="bx bx-user-check"></i>
-                            ${campaign.verifiedAccounts || 0}/${campaign.totalAccounts} verificaciones
+                            ${campaign.verifiedAccounts || 0}/${campaign.totalAccounts} verifications
                         </span>
                         <span class="stat">
                             <i class="bx bx-dollar-circle"></i>
-                            ${campaign.pricePerAccount} USDT por verificación
+                            ${campaign.pricePerAccount} USDT per verification
                         </span>
                         <span class="stat">
                             <i class="bx bx-time"></i>
@@ -189,100 +189,60 @@ async function openChat(requestId) {
                 </div>
             `;
 
-            // Actualizar estado del botón de confirmar
+            // Update confirm button state
             const confirmChargeButton = document.getElementById('confirmChargeButton');
             if (confirmChargeButton) {
                 confirmChargeButton.disabled = buttonDisabled;
                 confirmChargeButton.innerHTML = buttonDisabled ? `
                     <i class='bx bx-x'></i>
-                    <span>Cobro pendiente</span>
+                    <span>Pending charge</span>
                 ` : `
                     <i class='bx bx-check'></i>
-                    <span>Confirmar cobro</span>
+                    <span>Confirm charge</span>
                 `;
             }
         }
-        
-        // Configurar visibilidad y estado de los botones
-        if (currentUser.uid === requestData.sellerId) {
-            // Es vendedor - ocultar botón de terminar y mostrar botón de cobro
-            finishButton.style.display = 'none';
-            chargeButton.style.display = 'flex';
-            
-            // Actualizar estado del botón de cobro
-            chargeButton.disabled = buttonDisabled;
+
+        // Update charge button
+        if (chargeButton) {
             chargeButton.innerHTML = `
-                <i class='bx bx-dollar'></i>
-                <span>${buttonDisabled ? 'Cobro pendiente' : 'Cobrar cuenta'}</span>
+                <i class='bx bx-dollar-circle'></i>
+                <span>Request payment</span>
             `;
-        } else if (currentUser.uid === campaign.createdBy) {
-            // Es creador - ocultar botón de cobro y mostrar botón de terminar
-            chargeButton.style.display = 'none';
-            finishButton.style.display = 'flex';
-        } else {
-            // No es ni vendedor ni creador - ocultar ambos botones
-            chargeButton.style.display = 'none';
-            finishButton.style.display = 'none';
         }
 
-        // Obtener datos del otro usuario
-        const otherUserId = requestData.sellerId === currentUser.uid ? requestData.buyerId : requestData.sellerId;
+        // Update chat title
+        const otherUserId = requestData.userId === currentUser.uid ? 
+            campaign.createdBy : requestData.userId;
         const otherUserData = await getUserData(otherUserId);
+        document.getElementById('chatTitle').textContent = `Chat with ${otherUserData.name || otherUserData.email}`;
 
-        // Mostrar información en el header
-        document.getElementById('chatTitle').textContent = `Chat con ${otherUserData.name || otherUserData.email}`;
-
-        // Limpiar mensajes anteriores
-        const messagesContainer = document.getElementById('messagesContainer');
+        // Clear messages container
         messagesContainer.innerHTML = '';
 
-        // Detener listener anterior si existe
-        if (messagesListener) {
-            messagesListener();
-        }
-
-        // Escuchar nuevos mensajes
-        messagesListener = db.collection('requests')
-            .doc(requestId)
-            .collection('messages')
-            .orderBy('createdAt')
-            .onSnapshot(snapshot => {
-                snapshot.docChanges().forEach(change => {
-                    if (change.type === 'added') {
-                        const message = change.doc.data();
-                        appendMessage(message);
-                        // Scroll al último mensaje solo si estamos cerca del final
-                        const isNearBottom = messagesContainer.scrollHeight - messagesContainer.scrollTop - messagesContainer.clientHeight < 100;
-                        if (isNearBottom) {
-                            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-                        }
-                    }
-                });
-            });
-
-        // Mostrar formulario de mensajes
-        document.getElementById('messageForm').style.display = 'flex';
+        // Load messages
+        loadMessages(requestId);
 
     } catch (error) {
         console.error('Error opening chat:', error);
-        alert('Error al abrir el chat: ' + error.message);
+        alert('Error opening chat: ' + error.message);
     }
 }
 
-// Agregar mensaje al contenedor
+// Add message to container
 function appendMessage(message) {
     const messagesContainer = document.getElementById('messagesContainer');
     const messageDiv = document.createElement('div');
     messageDiv.classList.add('message');
     
-    // Determinar si el mensaje es saliente o entrante
+    // Determine if message is outgoing or incoming
     const isOutgoing = message.userId === currentUser.uid;
     messageDiv.classList.add(isOutgoing ? 'outgoing' : 'incoming');
 
-    // Obtener el rol del usuario para este mensaje
+    // Get user role for this message
     const userRole = isOutgoing ? 
-        (activeRequest.userId === currentUser.uid ? 'Vendedor' : 'Comprador') : 
-        (activeRequest.userId === message.userId ? 'Vendedor' : 'Comprador');
+        (activeRequest.userId === currentUser.uid ? 'Seller' : 'Buyer') : 
+        (activeRequest.userId === message.userId ? 'Seller' : 'Buyer');
 
     messageDiv.innerHTML = `
         <div class="user-role">${userRole}</div>
@@ -294,45 +254,45 @@ function appendMessage(message) {
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
-// Mostrar modal de cobro
+// Show charge modal
 function showChargeModal() {
     const modal = document.getElementById('chargeModal');
     modal.classList.add('show');
 }
 
-// Cerrar modal de cobro
+// Close charge modal
 function closeChargeModal() {
     const modal = document.getElementById('chargeModal');
     modal.classList.remove('show');
 }
 
-// Manejar el cobro de la cuenta
+// Handle account charge
 async function handleCharge() {
     try {
         const confirmButton = document.getElementById('confirmChargeButton');
         confirmButton.disabled = true;
         confirmButton.innerHTML = `
             <i class='bx bx-loader-alt bx-spin'></i>
-            <span>Procesando...</span>
+            <span>Processing...</span>
         `;
 
-        // Verificar que sea el vendedor
+        // Verify it's the seller
         if (!activeRequest || !currentUser) {
-            throw new Error('No hay una solicitud activa');
+            throw new Error('No active request');
         }
 
-        // Verificar si ya existe un cobro pendiente
+        // Check if there's already a pending charge
         const existingCharges = await db.collection('charges')
             .where('requestId', '==', activeRequest.id)
             .where('status', '==', 'pending')
             .get();
 
         if (!existingCharges.empty) {
-            alert('Ya existe una solicitud de cobro pendiente para esta cuenta.');
+            alert('There is already a pending charge request for this account.');
             return;
         }
 
-        // Crear solicitud de cobro
+        // Create charge request
         const chargeRequest = {
             campaignId: activeRequest.campaignId,
             requestId: activeRequest.id,
@@ -343,52 +303,52 @@ async function handleCharge() {
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         };
 
-        // Guardar la solicitud de cobro
+        // Save charge request
         await db.collection('charges').add(chargeRequest);
 
-        // Enviar mensaje al chat
+        // Send message to chat
         await db.collection('requests')
             .doc(activeRequest.id)
             .collection('messages')
             .add({
-                text: '💰 Se ha enviado una solicitud de cobro',
+                text: '💰 A charge request has been sent',
                 userId: currentUser.uid,
                 type: 'system',
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
             });
 
-        // Cerrar modal y notificar
+        // Close modal and notify
         closeChargeModal();
-        alert('Solicitud de cobro enviada. Esperando aprobación del comprador.');
+        alert('Charge request sent. Waiting for buyer approval.');
 
     } catch (error) {
-        console.error('Error al enviar cobro:', error);
+        console.error('Error sending charge:', error);
         alert('Error: ' + error.message);
     } finally {
-        // Actualizar estado de los botones
+        // Update button states
         const chargeButton = document.getElementById('chargeButton');
         const confirmButton = document.getElementById('confirmChargeButton');
         
         chargeButton.disabled = true;
         chargeButton.innerHTML = `
             <i class='bx bx-x'></i>
-            <span>Cobro pendiente</span>
+            <span>Pending charge</span>
         `;
         
         confirmButton.disabled = true;
         confirmButton.innerHTML = `
             <i class='bx bx-check'></i>
-            <span>Confirmar cobro</span>
+            <span>Confirm charge</span>
         `;
     }
 }
 
-// Enviar mensaje
+// Send message
 async function handleMessageSubmit(event) {
     event.preventDefault();
 
     if (!activeRequest) {
-        alert('Por favor selecciona un chat');
+        alert('Please select a chat');
         return;
     }
 
@@ -399,7 +359,7 @@ async function handleMessageSubmit(event) {
     if (!text) return;
 
     try {
-        // Deshabilitar input y botón mientras se envía
+        // Disable input and button while sending
         messageInput.disabled = true;
         sendButton.disabled = true;
         sendButton.classList.add('sending');
@@ -419,16 +379,16 @@ async function handleMessageSubmit(event) {
 
     } catch (error) {
         console.error('Error sending message:', error);
-        alert('Error al enviar el mensaje: ' + error.message);
+        alert('Error sending message: ' + error.message);
     } finally {
-        // Re-habilitar input y botón
+        // Re-enable input and button
         messageInput.disabled = false;
         sendButton.disabled = false;
         sendButton.classList.remove('sending');
     }
 }
 
-// Obtener datos de usuario
+// Get user data
 async function getUserData(userId) {
     const userDoc = await db.collection('users').doc(userId).get();
     return {
@@ -437,7 +397,7 @@ async function getUserData(userId) {
     };
 }
 
-// Utilidades
+// Utilities
 function formatDate(timestamp) {
     if (!timestamp) return '';
     return new Date(timestamp.seconds * 1000).toLocaleString();
