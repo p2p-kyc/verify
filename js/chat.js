@@ -202,7 +202,7 @@ async function openChat(requestId) {
                 `;
             }
         }
-
+        
         // Update charge button
         if (chargeButton) {
             chargeButton.innerHTML = `

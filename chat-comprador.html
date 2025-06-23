@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat de Comprador - KYC P2P</title>
+    <title>Buyer Chat - KYC P2P</title>
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
     <link rel="stylesheet" href="style.css">
     <style>
@@ -411,7 +411,7 @@
 
         /* Tooltip para el botón de terminar */
         #finishButton::after {
-            content: 'Terminar campaña';
+            content: 'Terminate campaign';
             position: absolute;
             bottom: 100%;
             left: 50%;
@@ -547,15 +547,17 @@
 </head>
 <body>
     <div class="chat-container">
-        <!-- Lista de chats -->
+        <!-- Chats List -->
         <div class="chats-list">
             <div class="chats-list-header">
-                <h2>Chats de Campañas</h2>
+                <h2>Campaign Chats</h2>
             </div>
-            <div id="chatsList"></div>
+            <div id="chatsList">
+                <!-- Chats will be dynamically loaded here -->
+            </div>
         </div>
 
-        <!-- Área de chat -->
+        <!-- Main Chat Area -->
         <div class="chat-area">
             <div class="chat-header">
                 <div class="chat-header-info">
@@ -563,34 +565,33 @@
                         <i class='bx bx-user'></i>
                     </div>
                     <div class="chat-header-text">
-                        <h3 id="chatTitle">Selecciona un chat</h3>
-                        <div id="campaignInfo"></div>
+                        <h3 id="chatTitle">Select a chat</h3>
+                        <p id="campaignInfo"></p>
                     </div>
                 </div>
-                <div class="action-buttons">
-                    <button class="action-button danger" onclick="handleCancelCampaign()">
-                        <i class='bx bx-x-circle'></i>
-                        Cancelar campaña
-                    </button>
+                <div class="chat-header-actions" id="headerActions">
+                    <!-- Button will be added dynamically when a chat is selected -->
                 </div>
             </div>
-
-            <!-- Contenedor de mensajes -->
-            <div id="messagesContainer"></div>
-
-            <!-- Formulario de mensajes -->
+            <div id="messagesContainer">
+                <!-- Messages will be dynamically loaded here -->
+            </div>
             <form id="messageForm" class="message-form">
                 <input type="file" id="imageInput" accept="image/*" style="display: none;">
                 <button type="button" id="imageButton" style="background: none; border: none; color: var(--whatsapp-green); cursor: pointer;">
                     <i class='bx bx-image'></i>
                 </button>
-                <input type="text" id="messageInput" placeholder="Escribe un mensaje..." autocomplete="off">
+                <input type="text" id="messageInput" placeholder="Type a message..." autocomplete="off">
                 <button type="submit" id="sendButton">
                     <i class='bx bx-send'></i>
                 </button>
             </form>
-
-
+            <!-- Barra de acciones flotante para cancelar campaña -->
+            <div class="action-bar">
+                <button id="cancelCampaignBtn" class="action-button" style="display:none; position: fixed; bottom: 24px; right: 24px; width: 56px; height: 56px; border-radius: 50%; background-color: var(--whatsapp-green); color: white; font-size: 1.5rem; box-shadow: 0 4px 8px rgba(0,0,0,0.4);">
+                    <i class='bx bx-x-circle'></i>
+                </button>
+            </div>
         </div>
     </div>
 
@@ -604,3 +605,7 @@
     <script src="js/chat-comprador.js"></script>
 </body>
 </html>
+
+</html>
+
+

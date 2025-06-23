@@ -13,22 +13,22 @@ const headerActions = document.getElementById('headerActions');
 // Función para crear el botón de cobro
 async function createChargeButton(campaign) {
     try {
-        console.log('Creando botón de cobro con campaña:', campaign);
+        console.log('Creating charge button with campaign:', campaign);
         
         // Validar campaña
         if (!campaign || !campaign.id) {
-            throw new Error('Campaña inválida');
+            throw new Error('Invalid campaign');
         }
 
         // Obtener datos actualizados de la campaña
         const campaignDoc = await window.db.collection('campaigns').doc(campaign.id).get();
         if (!campaignDoc.exists) {
-            throw new Error('La campaña no existe');
+            throw new Error('Campaign does not exist');
         }
 
         const campaignData = campaignDoc.data();
         if (!campaignData || typeof campaignData.accountCount !== 'number') {
-            throw new Error('Datos de campaña inválidos');
+            throw new Error('Invalid campaign data');
         }
 
         // Limpiar botón anterior si existe
@@ -39,7 +39,7 @@ async function createChargeButton(campaign) {
         // Obtener cuentas cobradas
         const cuentasCobradas = await getChargedAccounts(campaign.id);
         if (typeof cuentasCobradas !== 'number') {
-            throw new Error('Error al obtener cuentas cobradas');
+            throw new Error('Error getting charged accounts');
         }
 
         const cuentasDisponibles = campaignData.accountCount - cuentasCobradas;
@@ -54,18 +54,18 @@ async function createChargeButton(campaign) {
 
         if (!isActive || !hasCuentasDisponibles) {
             button.disabled = true;
-            button.title = !isActive ? 'La campaña no está activa' : 'No hay cuentas disponibles';
+            button.title = !isActive ? 'The campaign is not active' : 'No accounts available';
             button.style.opacity = '0.7';
             button.style.cursor = 'not-allowed';
             button.innerHTML = `
                 <i class='bx bx-dollar'></i>
-                <span>${!isActive ? 'Campaña ' + campaignData.status : 'Sin cuentas disponibles'}</span>
+                <span>${!isActive ? 'Campaign ' + campaignData.status : 'No accounts available'}</span>
             `;
         } else {
-            button.title = 'Solicitar cobro';
+            button.title = 'Request payment';
             button.innerHTML = `
                 <i class='bx bx-dollar'></i>
-                <span>Cobrar cuenta (${cuentasDisponibles} disponibles)</span>
+                <span>Charge account (${cuentasDisponibles} available)</span>
             `;
             // Agregar evento click solo si está activo y hay cuentas
             button.addEventListener('click', requestPayment);
@@ -75,7 +75,7 @@ async function createChargeButton(campaign) {
         headerActions.appendChild(button);
         return button;
     } catch (error) {
-        console.error('Error al crear botón de cobro:', error);
+        console.error('Error creating charge button:', error);
         // Mostrar mensaje de error al usuario
         if (headerActions) {
             headerActions.innerHTML = '';
@@ -116,15 +116,15 @@ document.getElementById('imageInput').addEventListener('change', async (event) =
         await sendImageMessage(base64Image);
         event.target.value = ''; // Limpiar input
     } catch (error) {
-        console.error('Error al procesar la imagen:', error);
-        alert('Error al procesar la imagen. Por favor, intenta de nuevo.');
+        console.error('Error processing image:', error);
+        alert('Error processing the image. Please try again.');
     }
 });
 
 // Enviar mensaje con imagen
 async function sendImageMessage(imageData) {
     if (!activeRequest) {
-        alert('Por favor selecciona un chat primero');
+        alert('Please select a chat first');
         return;
     }
 
@@ -143,8 +143,8 @@ async function sendImageMessage(imageData) {
 
         scrollToBottom();
     } catch (error) {
-        console.error('Error al enviar imagen:', error);
-        alert('Error al enviar la imagen. Por favor, intenta de nuevo.');
+        console.error('Error sending image:', error);
+        alert('Error sending the image. Please try again.');
     }
 };
 
@@ -173,7 +173,7 @@ window.addEventListener('load', () => {
 async function loadSellerChats() {
     try {
         const chatsList = document.getElementById('chatsList');
-        console.log('Cargando chats del vendedor:', currentUser.uid);
+        console.log('Loading seller chats:', currentUser.uid);
 
         // Buscar solicitudes hechas por el usuario
         const requests = await window.db.collection('requests')
@@ -205,7 +205,7 @@ async function loadSellerChats() {
             chatsList.innerHTML = `
                 <div class="no-chats">
                     <i class='bx bx-message-square-dots'></i>
-                    <p>No hay chats disponibles</p>
+                    <p>No chats available</p>
                 </div>
             `;
             return;
@@ -217,12 +217,12 @@ async function loadSellerChats() {
             const lastMessage = await getLastMessage(request.id);
             const statusClass = request.campaignData.status === 'active' ? 'active' : 'completed';
             
-            let lastMessageText = 'No hay mensajes';
+            let lastMessageText = 'No messages';
             if (lastMessage) {
                 if (lastMessage.type === 'image') {
-                    lastMessageText = 'Imagen';
+                    lastMessageText = 'Image';
                 } else if (lastMessage.type === 'payment_proof') {
-                    lastMessageText = 'Comprobante de pago';
+                    lastMessageText = 'Payment proof';
                 } else if (lastMessage.text) {
                     lastMessageText = lastMessage.text;
                 }
@@ -253,7 +253,7 @@ async function loadSellerChats() {
         chatsList.innerHTML = `
             <div class="no-chats">
                 <i class='bx bx-error-circle'></i>
-                <p>Error al cargar los chats</p>
+                <p>Error loading chats</p>
             </div>
         `;
     }
@@ -297,21 +297,21 @@ async function openChat(requestId) {
         // Obtener datos de la solicitud
         const requestDoc = await window.db.collection('requests').doc(requestId).get();
         if (!requestDoc.exists) {
-            throw new Error('Chat no encontrado');
+            throw new Error('Chat not found');
         }
 
         const requestData = requestDoc.data();
         
         // Verificar que el usuario actual es el vendedor
         if (requestData.userId !== currentUser.uid) {
-            throw new Error('No tienes permiso para ver este chat');
+            throw new Error('You do not have permission to view this chat');
         }
 
         // Obtener datos de la campaña
         console.log('Obteniendo campaña:', requestData.campaignId);
         const campaignDoc = await window.db.collection('campaigns').doc(requestData.campaignId).get();
         if (!campaignDoc.exists) {
-            throw new Error('Campaña no encontrada');
+            throw new Error('Campaign not found');
         }
 
         const campaignData = campaignDoc.data();
@@ -402,7 +402,7 @@ async function openChat(requestId) {
 
     } catch (error) {
         console.error('Error opening chat:', error);
-        alert('Error al abrir el chat: ' + error.message);
+        alert('Error opening chat: ' + error.message);
     }
 }
 
@@ -430,14 +430,14 @@ async function handleMessageSubmit(event) {
 
     } catch (error) {
         console.error('Error sending message:', error);
-        alert('Error al enviar el mensaje: ' + error.message);
+        alert('Error sending message: ' + error.message);
     }
 }
 
 // Manejar cobro
 async function handleCharge() {
     if (!activeRequest) {
-        alert('Por favor selecciona un chat primero');
+        alert('Please select a chat first');
         return;
     }
 
@@ -455,12 +455,12 @@ async function handleCharge() {
         chargeButton.disabled = true;
         chargeButton.innerHTML = `
             <i class='bx bx-dollar'></i>
-            <span>Cobro pendiente</span>
+            <span>Charge pending</span>
         `;
 
     } catch (error) {
         console.error('Error creating charge:', error);
-        alert('Error al crear el cobro: ' + error.message);
+        alert('Error creating charge: ' + error.message);
     }
 }
 
@@ -489,7 +489,7 @@ async function appendMessage(message) {
             const imageContainer = document.createElement('div');
             const image = document.createElement('img');
             image.src = message.imageData;
-            image.alt = 'Imagen';
+            image.alt = 'Image';
             image.style.maxWidth = '300px';
             image.style.borderRadius = '8px';
             
@@ -516,11 +516,11 @@ async function appendMessage(message) {
                     <div class="payment-actions">
                         <button class="button primary" onclick="handlePaymentResponse('${message.paymentRequestId}', 'appeal')">
                             <i class='bx bx-message-square-dots'></i>
-                            Apelar decisión
+                            Appeal decision
                         </button>
                         <button class="button secondary" onclick="handlePaymentResponse('${message.paymentRequestId}', 'accept_rejection')">
                             <i class='bx bx-check'></i>
-                            Continuar sin pago
+                            Continue without payment
                         </button>
                     </div>
                 </div>
@@ -543,7 +543,7 @@ async function appendMessage(message) {
             
             const image = document.createElement('img');
             image.src = message.imageData;
-            image.alt = 'Comprobante de pago';
+            image.alt = 'Payment proof';
             image.style.maxWidth = '300px';
             image.style.borderRadius = '8px';
             image.style.marginBottom = '10px';
@@ -585,12 +585,12 @@ async function appendMessage(message) {
 
                 const approveButton = document.createElement('button');
                 approveButton.className = 'action-button approve';
-                approveButton.innerHTML = '<i class="bx bx-check"></i> Aprobar';
+                approveButton.innerHTML = '<i class="bx bx-check"></i> Approve';
                 approveButton.onclick = () => handlePaymentResponse(message.paymentRequestId, 'approved');
 
                 const rejectButton = document.createElement('button');
                 rejectButton.className = 'action-button reject';
-                rejectButton.innerHTML = '<i class="bx bx-x"></i> Rechazar';
+                rejectButton.innerHTML = '<i class="bx bx-x"></i> Reject';
                 rejectButton.onclick = () => handlePaymentResponse(message.paymentRequestId, 'rejected');
 
                 actionsDiv.appendChild(approveButton);
@@ -612,7 +612,7 @@ async function appendMessage(message) {
         messagesContainer.appendChild(messageDiv);
         scrollToBottom();
     } catch (error) {
-        console.error('Error al agregar mensaje:', error);
+        console.error('Error adding message:', error);
     }
 }
 
@@ -673,40 +673,46 @@ async function requestPayment() {
 
         // Show the charge modal
         const modal = document.getElementById('chargeModal');
-        const confirmBtn = document.getElementById('confirmCharge');
-        const cancelBtn = document.getElementById('cancelCharge');
-        const closeBtn = modal.querySelector('.close');
+        const confirmBtn = document.getElementById('confirmChargeButton');
+        const cancelBtn = document.querySelector('#chargeModal .action-button.secondary');
+        const closeBtn = document.querySelector('#chargeModal .close');
 
         const accountsToCharge = await new Promise((resolve, reject) => {
             openChargeModal(campaignData, availableAccounts);
 
-            confirmBtn.onclick = () => {
-                const numAccounts = parseInt(document.getElementById('accountsToCharge').value);
-                if (numAccounts > 0 && numAccounts <= availableAccounts) {
-                    resolve(numAccounts);
-                    closeChargeModal();
-                } else {
-                    document.getElementById('accountValidation').textContent = 'Invalid number of accounts';
-                }
-            };
-            cancelBtn.onclick = () => reject(new Error('Operation cancelled'));
-            closeBtn.onclick = () => reject(new Error('Operation cancelled'));
+            if (confirmBtn) {
+                confirmBtn.onclick = () => {
+                    const numAccounts = parseInt(document.getElementById('accountsToCharge').value);
+                    if (numAccounts > 0 && numAccounts <= availableAccounts) {
+                        resolve(numAccounts);
+                        closeChargeModal();
+                    } else {
+                        document.getElementById('accountValidation').textContent = 'Invalid number of accounts';
+                    }
+                };
+            }
+            if (cancelBtn) {
+                cancelBtn.onclick = () => reject(new Error('Operation cancelled'));
+            }
+            if (closeBtn) {
+                closeBtn.onclick = () => reject(new Error('Operation cancelled'));
+            }
         });
 
         // If we get here, the user has confirmed the number of accounts.
         const totalAmount = campaignData.pricePerAccount * accountsToCharge;
         const paymentRequest = {
-            sellerId: currentUser.uid,
+                    sellerId: currentUser.uid,
             buyerId: campaignData.createdBy, // Correct buyerId
-            campaignId: activeRequest.campaign.id,
-            requestId: activeRequest.id,
-            amount: totalAmount,
-            accountsRequested: accountsToCharge,
+                    campaignId: activeRequest.campaign.id,
+                    requestId: activeRequest.id,
+                    amount: totalAmount,
+                    accountsRequested: accountsToCharge,
             pricePerAccount: campaignData.pricePerAccount,
-            currency: 'USDT',
-            status: 'pending',
-            createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
-        };
+                    currency: 'USDT',
+                    status: 'pending',
+                    createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
+                };
 
         const button = headerActions.querySelector('button');
         if (button) {
@@ -730,7 +736,7 @@ async function requestPayment() {
 
         const messageRef = window.db.collection('requests').doc(activeRequest.id).collection('messages').doc();
         batch.set(messageRef, message);
-        
+
         await batch.commit();
 
     } catch (error) {
@@ -753,7 +759,7 @@ async function handlePaymentResponse(paymentRequestId, response) {
         // Obtener la solicitud de pago
         const paymentRequestDoc = await window.db.collection('payment_requests').doc(paymentRequestId).get();
         if (!paymentRequestDoc.exists) {
-            throw new Error('Solicitud de pago no encontrada');
+            throw new Error('Payment request not found');
         }
 
         const paymentRequestData = paymentRequestDoc.data();
@@ -762,17 +768,17 @@ async function handlePaymentResponse(paymentRequestId, response) {
         if (response === 'appeal') {
             // Para apelación, verificar que el pago esté rechazado
             if (paymentRequestData.status !== 'rejected') {
-                throw new Error('Solo se pueden apelar pagos rechazados');
+                throw new Error('Only rejected payments can be appealed');
             }
         } else if (response === 'accept_rejection') {
             // Para aceptar rechazo, verificar que el pago esté rechazado
             if (paymentRequestData.status !== 'rejected') {
-                throw new Error('Solo se puede aceptar el rechazo de pagos rechazados');
+                throw new Error('Only the rejection of rejected payments can be accepted');
             }
         } else {
             // Para otras acciones, verificar que esté pendiente
             if (paymentRequestData.status !== 'pending') {
-                throw new Error('Esta solicitud de pago ya fue procesada');
+                throw new Error('This payment request has already been processed');
             }
         }
 
@@ -845,7 +851,7 @@ async function handlePaymentResponse(paymentRequestId, response) {
                 });
 
                 // Notificar al usuario
-                alert('¡La campaña ha sido completada! Se han cobrado todas las cuentas.');
+                alert('The campaign has been completed! All accounts have been charged.');
             }
         }
 
@@ -855,7 +861,7 @@ async function handlePaymentResponse(paymentRequestId, response) {
         let message;
         if (response === 'appeal') {
             message = {
-                text: '⚠️ Has solicitado una apelación. El administrador revisará tu caso y la documentación.',
+                text: '⚠️ You have requested an appeal. The administrator will review your case and the documentation.',
                 userId: currentUser.uid,
                 type: 'payment_appeal',
                 paymentRequestId,
@@ -866,7 +872,7 @@ async function handlePaymentResponse(paymentRequestId, response) {
             };
         } else if (response === 'accept_rejection') {
             message = {
-                text: '✅ Has aceptado continuar sin el pago',
+                text: '✅ You have agreed to continue without payment',
                 userId: currentUser.uid,
                 type: 'payment_response',
                 paymentRequestId,
@@ -876,8 +882,8 @@ async function handlePaymentResponse(paymentRequestId, response) {
         } else {
             message = {
                 text: response === 'approved' 
-                    ? `👍 El comprador ha aprobado la solicitud de pago de ${paymentRequestData.accountsRequested} cuenta${paymentRequestData.accountsRequested > 1 ? 's' : ''} por $${paymentRequestData.amount} ${paymentRequestData.currency}`
-                    : `❌ El comprador ha rechazado la solicitud de pago de ${paymentRequestData.accountsRequested} cuenta${paymentRequestData.accountsRequested > 1 ? 's' : ''} por $${paymentRequestData.amount} ${paymentRequestData.currency}`,
+                    ? `👍 The buyer has approved the payment request for ${paymentRequestData.accountsRequested} account${paymentRequestData.accountsRequested > 1 ? 's' : ''} for $${paymentRequestData.amount} ${paymentRequestData.currency}`
+                    : `❌ The buyer has rejected the payment request for ${paymentRequestData.accountsRequested} account${paymentRequestData.accountsRequested > 1 ? 's' : ''} for $${paymentRequestData.amount} ${paymentRequestData.currency}`,
                 userId: currentUser.uid,
                 type: 'payment_response',
                 paymentRequestId,
@@ -896,18 +902,18 @@ async function handlePaymentResponse(paymentRequestId, response) {
             .add(message);
 
     } catch (error) {
-        console.error('Error al procesar respuesta de pago:', error);
-        alert('Error al procesar la respuesta: ' + error.message);
+        console.error('Error processing payment response:', error);
+        alert('Error processing the response: ' + error.message);
     }
 }
 
 // Formatear estado de la campaña
 function formatStatus(status) {
     const statusMap = {
-        'active': 'Activa',
-        'approved': 'Aprobada',
-        'completed': 'Completada',
-        'cancelled': 'Cancelada'
+        'active': 'Active',
+        'approved': 'Approved',
+        'completed': 'Completed',
+        'cancelled': 'Cancelled'
     };
     return statusMap[status] || status;
 }
@@ -921,19 +927,19 @@ function formatDate(timestamp) {
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
 
     if (days === 0) {
-        return new Intl.DateTimeFormat('es', {
+        return new Intl.DateTimeFormat('en', {
             hour: '2-digit',
             minute: '2-digit',
             hour12: true
         }).format(date);
     } else if (days === 1) {
-        return 'Ayer';
+        return 'Yesterday';
     } else if (days < 7) {
-        return new Intl.DateTimeFormat('es', {
+        return new Intl.DateTimeFormat('en', {
             weekday: 'long'
         }).format(date);
     } else {
-        return new Intl.DateTimeFormat('es', {
+        return new Intl.DateTimeFormat('en', {
             day: '2-digit',
             month: 'short'
         }).format(date);
@@ -989,7 +995,7 @@ function scrollToBottom() {
 async function getChargedAccounts(campaignId) {
     try {
         if (!campaignId) {
-            console.error('Error: campaignId es undefined en getChargedAccounts');
+            console.error('Error: campaignId is undefined in getChargedAccounts');
             return 0;
         }
 
@@ -1013,7 +1019,7 @@ async function getChargedAccounts(campaignId) {
                 const data = doc.data();
                 if (data && typeof data.accountsRequested === 'number') {
                     totalCuentasCobradas += data.accountsRequested;
-                    console.log('Cuentas aprobadas:', data.accountsRequested);
+                    console.log('Approved accounts:', data.accountsRequested);
                 } else {
                     console.warn('Solicitud sin accountsRequested:', doc.id);
                     totalCuentasCobradas += 1;
@@ -1027,7 +1033,7 @@ async function getChargedAccounts(campaignId) {
                 const data = doc.data();
                 if (data && typeof data.accountsRequested === 'number') {
                     totalCuentasCobradas += data.accountsRequested;
-                    console.log('Cuentas pagadas:', data.accountsRequested);
+                    console.log('Paid accounts:', data.accountsRequested);
                 } else {
                     console.warn('Solicitud sin accountsRequested:', doc.id);
                     totalCuentasCobradas += 1;
@@ -1035,10 +1041,10 @@ async function getChargedAccounts(campaignId) {
             });
         }
 
-        console.log(`Total cuentas cobradas para campaña ${campaignId}:`, totalCuentasCobradas);
+        console.log(`Total charged accounts for campaign ${campaignId}:`, totalCuentasCobradas);
         return totalCuentasCobradas;
     } catch (error) {
-        console.error('Error al obtener cuentas cobradas:', error);
+        console.error('Error getting charged accounts:', error);
         return 0;
     }
 }

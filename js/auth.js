@@ -33,6 +33,8 @@ async function handleRegister(event) {
     
     const email = document.getElementById('registerEmail').value;
     const password = document.getElementById('registerPassword').value;
+    const username = document.getElementById('registerUsername') ? document.getElementById('registerUsername').value : '';
+    const binanceId = document.getElementById('registerBinanceId') ? document.getElementById('registerBinanceId').value : '';
     
     try {
         const userCredential = await auth.createUserWithEmailAndPassword(email, password);
@@ -40,6 +42,8 @@ async function handleRegister(event) {
         // Create user document in Firestore
         await db.collection('users').doc(userCredential.user.uid).set({
             email: email,
+            username: username,
+            binanceId: binanceId,
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
             role: 'user'
         });

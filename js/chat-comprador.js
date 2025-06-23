@@ -36,15 +36,15 @@ document.getElementById('imageInput').addEventListener('change', async (event) =
         await sendImageMessage(base64Image);
         event.target.value = ''; // Limpiar input
     } catch (error) {
-        console.error('Error al procesar la imagen:', error);
-        alert('Error al procesar la imagen. Por favor, intenta de nuevo.');
+        console.error('Error processing image:', error);
+        alert('Error processing the image. Please try again.');
     }
 });
 
 // Enviar mensaje con imagen
 async function sendImageMessage(imageData) {
     if (!activeRequest) {
-        alert('Por favor selecciona un chat primero');
+        alert('Please select a chat first');
         return;
     }
 
@@ -63,8 +63,8 @@ async function sendImageMessage(imageData) {
 
         scrollToBottom();
     } catch (error) {
-        console.error('Error al enviar imagen:', error);
-        alert('Error al enviar la imagen. Por favor, intenta de nuevo.');
+        console.error('Error sending image:', error);
+        alert('Error sending the image. Please try again.');
     }
 };
 
@@ -93,7 +93,7 @@ window.addEventListener('load', () => {
 async function loadBuyerChats() {
     try {
         const chatsList = document.getElementById('chatsList');
-        console.log('Cargando chats del comprador:', currentUser.uid);
+        console.log('Loading buyer chats:', currentUser.uid);
 
         // Buscar campañas creadas por el usuario
         const campaigns = await window.db.collection('campaigns')
@@ -127,7 +127,7 @@ async function loadBuyerChats() {
             chatsList.innerHTML = `
                 <div class="no-chats">
                     <i class='bx bx-message-square-dots'></i>
-                    <p>No hay chats disponibles</p>
+                    <p>No chats available</p>
                 </div>
             `;
             return;
@@ -139,12 +139,12 @@ async function loadBuyerChats() {
             const lastMessage = await getLastMessage(request.id);
             const statusClass = request.campaignData.status === 'active' ? 'active' : 'completed';
 
-            let lastMessageText = 'No hay mensajes';
+            let lastMessageText = 'No messages';
             if (lastMessage) {
                 if (lastMessage.type === 'image') {
-                    lastMessageText = 'Imagen';
+                    lastMessageText = 'Image';
                 } else if (lastMessage.type === 'payment_proof') {
-                    lastMessageText = 'Comprobante de pago';
+                    lastMessageText = 'Payment proof';
                 } else if (lastMessage.text) {
                     lastMessageText = lastMessage.text;
                 }
@@ -180,7 +180,7 @@ async function loadBuyerChats() {
 
     } catch (error) {
         console.error('Error loading buyer chats:', error);
-        alert('Error al cargar los chats: ' + error.message);
+        alert('Error loading chats: ' + error.message);
     }
 }
 
@@ -225,7 +225,7 @@ async function openChat(requestId) {
         // Obtener datos de la solicitud
         const requestDoc = await window.db.collection('requests').doc(requestId).get();
         if (!requestDoc.exists) {
-            throw new Error('Chat no encontrado');
+            throw new Error('Chat not found');
         }
 
         const requestData = requestDoc.data();
@@ -233,14 +233,14 @@ async function openChat(requestId) {
         // Obtener datos de la campaña
         const campaignDoc = await window.db.collection('campaigns').doc(requestData.campaignId).get();
         if (!campaignDoc.exists) {
-            throw new Error('Campaña no encontrada');
+            throw new Error('Campaign not found');
         }
 
         const campaign = campaignDoc.data();
 
         // Verificar que el usuario actual es el creador de la campaña
         if (campaign.createdBy !== currentUser.uid) {
-            throw new Error('No tienes permiso para ver este chat');
+            throw new Error('You do not have permission to view this chat');
         }
 
         activeRequest = {
@@ -303,108 +303,109 @@ async function openChat(requestId) {
                 });
             });
 
+        // Mostrar u ocultar botón de cancelar campaña
+        const cancelBtn = document.getElementById('cancelCampaignBtn');
+        if (cancelBtn) {
+            // Verificar pagos pendientes
+            const pendingPayments = await window.db.collection('payment_requests')
+                .where('campaignId', '==', campaignDoc.id)
+                .where('status', 'in', ['pending', 'approved'])
+                .get();
+            if (campaign.status === 'active' && pendingPayments.empty) {
+                cancelBtn.style.display = 'inline-block';
+            } else {
+                cancelBtn.style.display = 'none';
+            }
+        }
+
     } catch (error) {
         console.error('Error opening chat:', error);
-        alert('Error al abrir el chat: ' + error.message);
+        alert('Error opening chat: ' + error.message);
     }
 }
 
 // Manejar envío de mensajes
 async function handleMessageSubmit(event) {
     event.preventDefault();
-
-    if (!activeRequest) {
-        alert('Por favor selecciona un chat primero');
-        return;
-    }
-
     const text = messageInput.value.trim();
-    if (!text) return;
+    messageInput.value = '';
+
+    if (text === '' || !activeRequest) return;
 
     try {
-        const message = {
-            text,
-            userId: currentUser.uid,
-            createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
-        };
         await window.db.collection('requests')
             .doc(activeRequest.id)
             .collection('messages')
-            .add(message);
+            .add({
+                text,
+                userId: currentUser.uid,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
 
-        messageInput.value = '';
-
+        scrollToBottom();
     } catch (error) {
         console.error('Error sending message:', error);
-        alert('Error al enviar el mensaje: ' + error.message);
+        alert('Error sending message: ' + error.message);
     }
 }
 
-// Manejar cancelar campaña
+// Manejar cancelación de campaña
 async function handleCancelCampaign() {
-    if (!activeRequest || !activeRequest.campaign) {
-        alert('Por favor selecciona un chat primero');
+    if (!activeRequest) return;
+
+    // Validar pagos pendientes antes de cancelar
+    const campaignId = activeRequest.campaign.id;
+    const pendingPayments = await window.db.collection('payment_requests')
+        .where('campaignId', '==', campaignId)
+        .where('status', 'in', ['pending', 'approved'])
+        .get();
+    if (!pendingPayments.empty) {
+        alert('You cannot cancel the campaign while there are pending or approved payments.');
         return;
     }
 
+    const confirmation = confirm('Are you sure you want to cancel this campaign? This action is irreversible.');
+    if (!confirmation) return;
+
     try {
-        // Verificar si hay pagos pendientes
-        const paymentRequests = await window.db.collection('payment_requests')
-            .where('campaignId', '==', activeRequest.campaign.id)
-            .where('status', 'in', ['pending', 'approved'])
-            .get();
+        // Iniciar un batch para operaciones atómicas
+        const batch = window.db.batch();
 
-        if (!paymentRequests.empty) {
-            alert('No se puede cancelar la campaña porque hay pagos pendientes');
-            return;
-        }
+        // 1. Marcar la campaña como 'cancelled'
+        const campaignRef = window.db.collection('campaigns').doc(campaignId);
+        batch.update(campaignRef, {
+            status: 'cancelled',
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
 
-        if (!confirm('¿Estás seguro de que deseas cancelar esta campaña? Esta acción no se puede deshacer.')) {
-            return;
-        }
-
-        // Crear solicitud de reembolso
-        const refundRequest = {
-            campaignId: activeRequest.campaign.id,
-            buyerId: currentUser.uid,
-            requestId: activeRequest.id,
-            status: 'pending',
-            createdAt: window.firebase.firestore.FieldValue.serverTimestamp(),
-            amount: activeRequest.totalAmount || 0,
-            currency: activeRequest.currency || 'USD'
-        };
-
-        await window.db.collection('refund_requests').add(refundRequest);
-
-        // Enviar mensaje al chat
-        const message = {
+        // 2. Optional: Notify the seller (if necessary)
+        // You could add a message in the chat informing about the cancellation.
+        const messageRef = window.db.collection('requests').doc(activeRequest.id).collection('messages').doc();
+        batch.set(messageRef, {
             type: 'system',
-            text: 'Se ha solicitado la cancelación de la campaña. Un administrador revisará la solicitud.',
-            userId: currentUser.uid,
-            createdAt: window.firebase.firestore.FieldValue.serverTimestamp()
-        };
+            text: 'The campaign has been cancelled by the buyer.',
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
 
-        await window.db.collection('requests')
-            .doc(activeRequest.id)
-            .collection('messages')
-            .add(message);
+        // Ejecutar el batch
+        await batch.commit();
 
-        // Recargar chats y chat actual
-        await loadBuyerChats();
-        await openChat(activeRequest.id);
-
-        alert('Solicitud de cancelación enviada correctamente');
+        // Update UI
+        alert('Campaign successfully cancelled.');
+        // Reload the chat list and the current chat to reflect the changes
+        loadBuyerChats();
+        openChat(activeRequest.id);
 
     } catch (error) {
-        console.error('Error al cancelar campaña:', error);
-        alert('Error al cancelar la campaña: ' + error.message);
+        console.error('Error cancelling campaign:', error);
+        alert('Error cancelling campaign: ' + error.message);
     }
 }
 
 // Agregar mensaje al contenedor
 function appendMessage(message) {
     if (message.type === 'payment_proof') {
-        // No mostrar mensajes de comprobante de pago al comprador
+        // Do not show payment proof messages to the buyer
         return;
     }
 
@@ -420,7 +421,7 @@ function appendMessage(message) {
         const imageContainer = document.createElement('div');
         const image = document.createElement('img');
         image.src = message.imageData;
-        image.alt = 'Imagen';
+        image.alt = 'Image';
         image.style.maxWidth = '300px';
         image.style.borderRadius = '8px';
 
@@ -440,11 +441,11 @@ function appendMessage(message) {
                 <div class="charge-actions">
                     <button class="button primary" onclick="handlePayment('${message.paymentRequestId}', 'approved')">
                         <i class='bx bx-check'></i>
-                        Pagar cuentas
+                        Pay accounts
                     </button>
                     <button class="button secondary" onclick="handlePayment('${message.paymentRequestId}', 'rejected')">
                         <i class='bx bx-x'></i>
-                        Rechazar
+                        Reject
                     </button>
                 </div>
             </div>
@@ -480,19 +481,19 @@ async function handlePayment(paymentRequestId, response) {
         // Obtener la solicitud de pago
         const paymentRequestDoc = await window.db.collection('payment_requests').doc(paymentRequestId).get();
         if (!paymentRequestDoc.exists) {
-            throw new Error('Solicitud de pago no encontrada');
+            throw new Error('Payment request not found');
         }
 
         const paymentRequestData = paymentRequestDoc.data();
 
         // Verificar que la solicitud esté pendiente
         if (paymentRequestData.status !== 'pending') {
-            throw new Error('Esta solicitud de pago ya fue procesada');
+            throw new Error('This payment request has already been processed');
         }
 
         // Confirmar la acción con el usuario
-        const action = response === 'approved' ? 'aprobar' : 'rechazar';
-        if (!confirm(`¿Estás seguro de que deseas ${action} el pago de ${paymentRequestData.accountsRequested} cuenta${paymentRequestData.accountsRequested > 1 ? 's' : ''} por $${paymentRequestData.amount} ${paymentRequestData.currency}?`)) {
+        const action = response === 'approved' ? 'approve' : 'reject';
+        if (!confirm(`Are you sure you want to ${action} the payment of ${paymentRequestData.accountsRequested} account${paymentRequestData.accountsRequested > 1 ? 's' : ''} for $${paymentRequestData.amount} ${paymentRequestData.currency}?`)) {
             return;
         }
 
@@ -506,8 +507,8 @@ async function handlePayment(paymentRequestId, response) {
         // Crear mensaje de respuesta
         const message = {
             text: response === 'approved' 
-                ? `👍 Has aprobado la solicitud de pago de ${paymentRequestData.accountsRequested} cuenta${paymentRequestData.accountsRequested > 1 ? 's' : ''} por $${paymentRequestData.amount} ${paymentRequestData.currency}`
-                : `❌ Has rechazado la solicitud de pago de ${paymentRequestData.accountsRequested} cuenta${paymentRequestData.accountsRequested > 1 ? 's' : ''} por $${paymentRequestData.amount} ${paymentRequestData.currency}`,
+                ? `👍 You have approved the payment request for ${paymentRequestData.accountsRequested} account${paymentRequestData.accountsRequested > 1 ? 's' : ''} for $${paymentRequestData.amount} ${paymentRequestData.currency}`
+                : `❌ You have rejected the payment request for ${paymentRequestData.accountsRequested} account${paymentRequestData.accountsRequested > 1 ? 's' : ''} for $${paymentRequestData.amount} ${paymentRequestData.currency}`,
             userId: currentUser.uid,
             type: response === 'approved' ? 'payment_response' : 'payment_rejected',
             paymentRequestId,
@@ -524,9 +525,10 @@ async function handlePayment(paymentRequestId, response) {
             .collection('messages')
             .add(message);
 
+        alert(`Payment ${response}.`);
     } catch (error) {
-        console.error('Error al procesar respuesta de pago:', error);
-        alert('Error al procesar la respuesta: ' + error.message);
+        console.error(`Error processing payment ${response}:`, error);
+        alert(`Error processing payment: ${error.message}`);
     }
 }
 
@@ -534,19 +536,20 @@ async function handlePayment(paymentRequestId, response) {
 async function getUserData(userId) {
     try {
         const userDoc = await window.db.collection('users').doc(userId).get();
-        return userDoc.exists ? userDoc.data() : { email: 'Usuario desconocido' };
+        return userDoc.exists ? userDoc.data() : { email: 'Unknown user' };
     } catch (error) {
         console.error('Error getting user data:', error);
-        return { email: 'Error al cargar usuario' };
+        return { email: 'Error loading user' };
     }
 }
 
 // Formatear estado de la campaña
 function formatStatus(status) {
     const statusMap = {
-        'active': 'Activa',
-        'completed': 'Completada',
-        'cancelled': 'Cancelada'
+        active: 'Active',
+        pending_payment: 'Pending Payment',
+        completed: 'Completed',
+        cancelled: 'Cancelled'
     };
     return statusMap[status] || status;
 }
@@ -556,7 +559,7 @@ function formatDate(timestamp) {
     if (!timestamp) return '';
 
     const date = timestamp.toDate();
-    return date.toLocaleTimeString('es-ES', {
+    return date.toLocaleTimeString('en-US', {
         hour: '2-digit',
         minute: '2-digit'
     });
@@ -571,7 +574,7 @@ function scrollToBottom() {
 async function getCuentasCobradas(campaignId) {
     try {
         if (!campaignId) {
-            console.error('Error: campaignId es undefined en getCuentasCobradas');
+            console.error('Error: campaignId is undefined in getCuentasCobradas');
             return 0;
         }
 
@@ -595,9 +598,9 @@ async function getCuentasCobradas(campaignId) {
                 const data = doc.data();
                 if (data && typeof data.accountsRequested === 'number') {
                     totalCuentasCobradas += data.accountsRequested;
-                    console.log('Cuentas aprobadas:', data.accountsRequested);
+                    console.log('Approved accounts:', data.accountsRequested);
                 } else {
-                    console.warn('Solicitud sin accountsRequested:', doc.id);
+                    console.warn('Request without accountsRequested:', doc.id);
                     totalCuentasCobradas += 1;
                 }
             });
@@ -609,18 +612,26 @@ async function getCuentasCobradas(campaignId) {
                 const data = doc.data();
                 if (data && typeof data.accountsRequested === 'number') {
                     totalCuentasCobradas += data.accountsRequested;
-                    console.log('Cuentas pagadas:', data.accountsRequested);
+                    console.log('Paid accounts:', data.accountsRequested);
                 } else {
-                    console.warn('Solicitud sin accountsRequested:', doc.id);
+                    console.warn('Request without accountsRequested:', doc.id);
                     totalCuentasCobradas += 1;
                 }
             });
         }
 
-        console.log(`Total cuentas cobradas para campaña ${campaignId}:`, totalCuentasCobradas);
+        console.log(`Total paid accounts for campaign ${campaignId}:`, totalCuentasCobradas);
         return totalCuentasCobradas;
     } catch (error) {
-        console.error('Error al obtener cuentas cobradas:', error);
+        console.error('Error getting paid accounts:', error);
         return 0;
     }
 }
+
+// Al cargar la página, asignar el event listener al botón de cancelar campaña
+window.addEventListener('DOMContentLoaded', () => {
+    const cancelBtn = document.getElementById('cancelCampaignBtn');
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', handleCancelCampaign);
+    }
+});

@@ -14,14 +14,15 @@ async function loadPayments() {
                 getCampaignData(payment.campaignId)
             ]);
             return {
-                id: doc.id,
+            id: doc.id,
                 ...payment,
                 sellerEmail: sellerData?.email || 'N/A',
+                sellerBinanceId: sellerData?.binanceId || 'N/A',
                 buyerEmail: buyerData?.email || 'N/A',
                 campaignName: campaignData?.name || 'N/A'
             };
         }));
-        
+
         currentPayments = payments;
         filterAndDisplayPayments();
 
@@ -59,6 +60,7 @@ function createPaymentRow(id, payment) {
         <td class="id-cell">${id.slice(-6)}</td>
         <td>${payment.campaignName || 'N/A'}</td>
         <td>${payment.sellerEmail}</td>
+        <td>${payment.sellerBinanceId}</td>
         <td>${payment.buyerEmail}</td>
         <td>${payment.accountsRequested || 0}</td>
         <td class="amount-cell">
@@ -524,16 +526,12 @@ async function getCampaignData(campaignId) {
 
 // Function to get user data
 async function getUserData(userId) {
-    if (!userId) return null;
     try {
         const userDoc = await window.db.collection('users').doc(userId).get();
-        if (userDoc.exists) {
-            return userDoc.data();
-        }
-        return null;
+        return userDoc.exists ? userDoc.data() : { email: 'N/A', binanceId: 'N/A' };
     } catch (error) {
-        console.error(`Error getting user data for ${userId}:`, error);
-        return null;
+        console.error('Error getting user data:', error);
+        return { email: 'N/A', binanceId: 'N/A' };
     }
 }
 

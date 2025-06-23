@@ -282,7 +282,7 @@ async function loadCampaigns() {
         document.getElementById('completedCount').textContent = completedCount;
 
         // Update campaigns feed
-        updateCampaignsFeed(snapshot);
+        await updateCampaignsFeed(snapshot);
     } catch (error) {
         console.error('Error loading campaigns:', error);
         const campaignsContainer = document.getElementById('availableCampaigns');
@@ -321,7 +321,7 @@ async function handleSearch(e) {
     }
 
     const snapshot = await query.get();
-    updateCampaignsFeed(snapshot);
+    await updateCampaignsFeed(snapshot);
 }
 
 // Handle filter button clicks
@@ -339,7 +339,7 @@ async function handleFilter(status) {
     }
 
     const snapshot = await query.get();
-    updateCampaignsFeed(snapshot);
+    await updateCampaignsFeed(snapshot);
 }
 
 // Handle sidebar filter clicks
@@ -447,10 +447,35 @@ function isOwner(campaign) {
 
 // Update campaigns feed
 async function updateCampaignsFeed(snapshot) {
-    const campaignsFeed = document.getElementById('availableCampaigns');
-    campaignsFeed.innerHTML = '';
+    // Actualizar contadores de campañas
+    let activeCount = 0;
+    let pendingCount = 0;
+    let completedCount = 0;
+    let cancelledCount = 0;
+    snapshot.forEach(doc => {
+        const campaign = doc.data();
+        switch (campaign.status) {
+            case 'active':
+                activeCount++;
+                break;
+            case 'pending':
+                pendingCount++;
+                break;
+            case 'completed':
+                completedCount++;
+                break;
+            case 'cancelled':
+                cancelledCount++;
+                break;
+        }
+    });
+    document.getElementById('activeCount').textContent = activeCount;
+    document.getElementById('pendingCount').textContent = pendingCount;
+    document.getElementById('completedCount').textContent = completedCount;
 
+    // No limpiar aquí, solo al renderizar para evitar duplicados
     if (snapshot.empty) {
+        const campaignsFeed = document.getElementById('availableCampaigns');
         campaignsFeed.innerHTML = `
             <div class="empty-state">
                 <i class='bx bx-search'></i>
@@ -469,11 +494,21 @@ async function updateCampaignsFeed(snapshot) {
         return dateB - dateA;
     });
 
-    campaigns.forEach(campaign => {
-        const card = createCampaignCard(campaign.id, campaign);
-        if (card) {
-            campaignsFeed.appendChild(card);
-        }
+    // Calcular cuentas cobradas para cada campaña antes de renderizar
+    Promise.all(campaigns.map(async c => {
+        c.chargedAccounts = await getCuentasCobradas(c.id);
+        console.log(`[updateCampaignsFeed] Campaña:`, c.id, c.name, `chargedAccounts:`, c.chargedAccounts, `accountCount:`, c.accountCount, c);
+        return c;
+    })).then(campaignsWithCharged => {
+        const campaignsFeed = document.getElementById('availableCampaigns');
+        campaignsFeed.innerHTML = '';
+        campaignsWithCharged.forEach(campaign => {
+            const card = createCampaignCard(campaign.id, campaign);
+            if (card) {
+                campaignsFeed.appendChild(card);
+            }
+        });
+        console.log(`[updateCampaignsFeed] Rendered cards:`, campaignsWithCharged.length);
     });
 }
 
@@ -502,6 +537,10 @@ function createCampaignCard(id, campaign) {
         const ownerStatus = window.currentUser && campaign.createdBy === window.currentUser.uid;
         const isActive = campaign.status === 'active';
         const isSaved = campaign.saved || false;
+
+        // Calcular progreso real (cuentas cobradas)
+        const charged = typeof campaign.chargedAccounts === 'number' ? campaign.chargedAccounts : (campaign.verificationCount || 0);
+        const total = campaign.accountCount;
 
         // Build card HTML
         card.innerHTML = `
@@ -545,7 +584,7 @@ function createCampaignCard(id, campaign) {
                     </div>
                     <div class="stat">
                         <i class='bx bx-check-circle'></i>
-                        <span>${sanitize(campaign.verificationCount || 0)}/${sanitize(campaign.accountCount)} verified</span>
+                        <span>${charged}/${total} paid</span>
                     </div>
                 </div>
             </div>
@@ -705,7 +744,7 @@ async function deleteCampaign(id) {
         showToast('Campaign deleted successfully');
 
         // Refresh campaigns to update counts
-        loadCampaigns();
+        await loadCampaigns();
     } catch (error) {
         console.error('Error deleting campaign:', error);
         showToast('Error deleting campaign', 'error');
@@ -1106,9 +1145,9 @@ async function initializeDashboard() {
                             window.unsubscribeCampaigns();
                         }
 
-                        // Show only active campaigns by default
+                        // Show all campaigns by default
                         window.unsubscribeCampaigns = window.db.collection('campaigns')
-                            .where('status', '==', 'active')
+                            .orderBy('createdAt', 'desc')
                             .onSnapshot(
                                 { includeMetadataChanges: true },
                                 (snapshot) => {
@@ -1195,4 +1234,41 @@ function applyDashboardFilter(status) {
     query.get().then(snapshot => {
         updateCampaignsFeed(snapshot);
     });
+}
+
+async function getCuentasCobradas(campaignId) {
+    try {
+        if (!campaignId) return 0;
+        const [approvedRequests, paidRequests] = await Promise.all([
+            db.collection('payment_requests').where('campaignId', '==', campaignId).where('status', '==', 'approved').get(),
+            db.collection('payment_requests').where('campaignId', '==', campaignId).where('status', '==', 'paid').get()
+        ]);
+        let total = 0;
+        if (approvedRequests && !approvedRequests.empty) {
+            approvedRequests.forEach(doc => {
+                const data = doc.data();
+                if (data && typeof data.accountsRequested === 'number') {
+                    total += data.accountsRequested;
+                    console.log(`[getCuentasCobradas][${campaignId}] Approved:`, data.accountsRequested, data);
+                } else {
+                    total += 1;
+                    console.warn(`[getCuentasCobradas][${campaignId}] Approved request without accountsRequested:`, doc.id);
+                }
+            });
+        }
+        if (paidRequests && !paidRequests.empty) {
+            paidRequests.forEach(doc => {
+                const data = doc.data();
+                if (data && typeof data.accountsRequested === 'number') {
+                    total += data.accountsRequested;
+                    console.log(`[getCuentasCobradas][${campaignId}] Paid:`, data.accountsRequested, data);
+                } else {
+                    total += 1;
+                    console.warn(`[getCuentasCobradas][${campaignId}] Paid request without accountsRequested:`, doc.id);
+                }
+            });
+        }
+        console.log(`[getCuentasCobradas][${campaignId}] TOTAL CHARGED:`, total);
+        return total;
+    } catch (e) { console.error(`[getCuentasCobradas][${campaignId}] ERROR:`, e); return 0; }
 }

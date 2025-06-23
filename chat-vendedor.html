@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat de Vendedor - KYC P2P</title>
+    <title>Seller Chat - KYC P2P</title>
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
     <link rel="stylesheet" href="style.css">
     <style>
@@ -453,7 +453,7 @@
         }
 
         #chargeButton::after {
-            content: 'Cobrar cuenta';
+            content: 'Charge Account';
             position: absolute;
             bottom: 100%;
             left: 50%;
@@ -675,17 +675,17 @@
 </head>
 <body>
     <div class="chat-container">
-        <!-- Lista de chats -->
+        <!-- Chats List -->
         <div class="chats-list">
             <div class="chats-list-header">
-                <h2>Chats de Campañas</h2>
+                <h2>Campaign Chats</h2>
             </div>
             <div id="chatsList">
-                <!-- Los chats se cargarán dinámicamente aquí -->
+                <!-- Chats will be dynamically loaded here -->
             </div>
         </div>
 
-        <!-- Área principal del chat -->
+        <!-- Main Chat Area -->
         <div class="chat-area">
             <div class="chat-header">
                 <div class="chat-header-info">
@@ -693,23 +693,23 @@
                         <i class='bx bx-user'></i>
                     </div>
                     <div class="chat-header-text">
-                        <h3 id="chatTitle">Selecciona un chat</h3>
+                        <h3 id="chatTitle">Select a chat</h3>
                         <p id="campaignInfo"></p>
                     </div>
                 </div>
                 <div class="chat-header-actions" id="headerActions">
-                    <!-- El botón se agregará dinámicamente cuando se seleccione un chat -->
+                    <!-- The button will be dynamically added when a chat is selected -->
                 </div>
             </div>
             <div id="messagesContainer">
-                <!-- Los mensajes se cargarán dinámicamente aquí -->
+                <!-- Messages will be dynamically loaded here -->
             </div>
             <form id="messageForm" class="message-form">
                 <input type="file" id="imageInput" accept="image/*" style="display: none;">
                 <button type="button" id="imageButton" style="background: none; border: none; color: var(--whatsapp-green); cursor: pointer;">
                     <i class='bx bx-image'></i>
                 </button>
-                <input type="text" id="messageInput" placeholder="Escribe un mensaje..." autocomplete="off">
+                <input type="text" id="messageInput" placeholder="Type a message..." autocomplete="off">
                 <button type="submit" id="sendButton">
                     <i class='bx bx-send'></i>
                 </button>
@@ -759,8 +759,15 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button id="cancelCharge" class="button secondary">Cancel</button>
-                <button id="confirmCharge" class="button primary">Confirm Charge</button>
+                <button id="confirmChargeButton" class="action-button">
+                    <i class='bx bx-check'></i>
+                    <span>Confirm charge</span>
+                </button>
+                <button onclick="closeChargeModal()" class="action-button secondary">
+                    <i class='bx bx-x'></i>
+                    <span>Cancel</span>
+                </button>
+                <button class="close" onclick="closeChargeModal()"><i class='bx bx-x'></i></button>
             </div>
         </div>
     </div>
