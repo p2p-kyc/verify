@@ -2,6 +2,7 @@
 let currentUser = null;
 let activeRequest = null;
 let messagesListener = null;
+let isInitialLoad = true;
 
 // Elementos del DOM
 const messageForm = document.getElementById('messageForm');
@@ -281,6 +282,7 @@ async function openChat(requestId) {
 
         // Limpiar mensajes anteriores
         messagesContainer.innerHTML = '';
+        isInitialLoad = true;
 
         // Detener listener anterior si existe
         if (messagesListener) {
@@ -293,14 +295,29 @@ async function openChat(requestId) {
             .collection('messages')
             .orderBy('createdAt', 'asc')
             .onSnapshot(snapshot => {
-                if (snapshot.metadata.hasPendingWrites) return;
-
-                snapshot.docChanges().forEach(change => {
-                    if (change.type === 'added') {
-                        appendMessage(change.doc.data());
+                try {
+                    // En la carga inicial, limpiar y cargar todos los mensajes
+                    if (isInitialLoad) {
+                        messagesContainer.innerHTML = '';
+                        snapshot.docs.forEach(doc => {
+                            appendMessage(doc.data());
+                        });
+                        isInitialLoad = false;
                         scrollToBottom();
+                    } else {
+                        // Para mensajes nuevos, solo agregar los que son realmente nuevos
+                        snapshot.docChanges().forEach(change => {
+                            if (change.type === 'added') {
+                                appendMessage(change.doc.data());
+                                scrollToBottom();
+                            }
+                        });
                     }
-                });
+                } catch (error) {
+                    console.error('Error in messages listener:', error);
+                }
+            }, error => {
+                console.error('Error setting up messages listener:', error);
             });
 
         // Mostrar u ocultar botón de cancelar campaña
@@ -339,10 +356,11 @@ async function handleMessageSubmit(event) {
             .add({
                 text,
                 userId: currentUser.uid,
+                type: 'text',
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
             });
 
-        scrollToBottom();
+        // El scroll se manejará automáticamente por el listener
     } catch (error) {
         console.error('Error sending message:', error);
         alert('Error sending message: ' + error.message);
@@ -409,10 +427,17 @@ function appendMessage(message) {
         return;
     }
 
+    // Verificar si el mensaje ya existe para evitar duplicados
+    const messageId = message.createdAt?.seconds || Date.now() / 1000;
+    const existingMessage = document.querySelector(`[data-timestamp="${messageId}"]`);
+    if (existingMessage) {
+        return; // El mensaje ya existe, no agregar duplicado
+    }
+
     const messageDiv = document.createElement('div');
     messageDiv.classList.add('message');
     messageDiv.classList.add(message.userId === currentUser.uid ? 'outgoing' : 'incoming');
-    messageDiv.dataset.timestamp = message.createdAt?.seconds || Date.now() / 1000;
+    messageDiv.dataset.timestamp = messageId;
     
     if (message.type === 'image') {
         const contentDiv = document.createElement('div');
@@ -567,7 +592,11 @@ function formatDate(timestamp) {
 
 // Scroll al último mensaje
 function scrollToBottom() {
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    setTimeout(() => {
+        if (messagesContainer) {
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+    }, 100);
 }
 
 // Obtener el número de cuentas cobradas para una campaña
