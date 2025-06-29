@@ -3,7 +3,7 @@ window.addEventListener('load', () => {
     window.auth.onAuthStateChanged(async user => {
         if (!user) {
             console.log('[MyCampaigns] Usuario no autenticado, redirigiendo a index.html');
-            window.location.href = 'index.html';
+            redirectTo('index.html');
             return;
         }
         console.log('[MyCampaigns] Usuario autenticado:', user.uid, user.email);
@@ -52,4 +52,14 @@ window.addEventListener('load', () => {
             campaignsDiv.innerHTML = '<div class="error">Error loading campaigns.</div>';
         }
     });
+});
+
+// Escuchar cambios de autenticación
+auth.onAuthStateChanged(user => {
+    currentUser = user;
+    if (!user) {
+        redirectTo('index.html');
+        return;
+    }
+    loadMyCampaigns();
 }); 

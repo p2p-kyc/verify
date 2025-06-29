@@ -6,7 +6,7 @@ let existingRequest = null;
 // Escuchar cambios de autenticación
 auth.onAuthStateChanged(async user => {
     if (!user) {
-        window.location.href = 'login.html';
+        redirectTo('login.html');
         return;
     }
 
@@ -227,7 +227,7 @@ async function openChatWithSeller(requestId) {
 
         // En campaign-request.js, el usuario actual es el vendedor
         // ya que esta página es para ver el estado de una solicitud
-        window.location.href = `chat-vendedor.html?requestId=${requestId}`;
+        redirectTo(`chat-vendedor.html?requestId=${requestId}`);
     } catch (error) {
         console.error('Error al abrir chat:', error);
         alert('Error: ' + error.message);

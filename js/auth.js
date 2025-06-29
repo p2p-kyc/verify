@@ -21,7 +21,7 @@ async function handleLogin(event) {
     
     try {
         await auth.signInWithEmailAndPassword(email, password);
-        window.location.href = '/dashboard.html';
+        redirectTo('dashboard.html');
     } catch (error) {
         alert('Error: ' + error.message);
     }
@@ -48,7 +48,7 @@ async function handleRegister(event) {
             role: 'user'
         });
         
-        window.location.href = '/dashboard.html';
+        redirectTo('dashboard.html');
     } catch (error) {
         alert('Error: ' + error.message);
     }
@@ -58,7 +58,7 @@ async function handleRegister(event) {
 function handleLogout() {
     auth.signOut()
         .then(() => {
-            window.location.href = '/index.html';
+            redirectTo('index.html');
         })
         .catch((error) => {
             alert('Error: ' + error.message);
@@ -121,7 +121,7 @@ window.auth.onAuthStateChanged(async (user) => {
 
         // Redirect if not admin and on admin.html
         if (window.location.pathname.includes('admin.html') && userRole !== 'admin') {
-            window.location.href = 'index.html';
+            redirectTo('index.html');
         }
 
     } else {  

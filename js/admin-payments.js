@@ -359,7 +359,7 @@ window.auth.onAuthStateChanged(async (user) => {
         // Check if user is admin
         const userDoc = await window.db.collection('users').doc(user.uid).get();
         if (!userDoc.exists || userDoc.data().role !== 'admin') {
-            window.location.href = 'index.html';
+            redirectTo('index.html');
             return;
         }
 
@@ -373,7 +373,7 @@ window.auth.onAuthStateChanged(async (user) => {
         document.getElementById('statusFilter').addEventListener('change', handleFilters);
         document.getElementById('sortOrder').addEventListener('change', handleFilters);
     } else {
-        window.location.href = 'login.html';
+        redirectTo('login.html');
     }
 });
 

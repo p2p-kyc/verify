@@ -231,7 +231,7 @@ function initializeEventListeners() {
         if (logoutBtn) {
             logoutBtn.addEventListener('click', () => {
                 auth.signOut().then(() => {
-                    window.location.href = 'login.html';
+                    redirectTo('login.html');
                 });
             });
         }
@@ -882,7 +882,7 @@ async function viewCampaign(id) {
 
             // Take the first request
             const requestDoc = requestsSnapshot.docs[0];
-            window.location.href = `chat-comprador.html?requestId=${requestDoc.id}`;
+            redirectTo(`chat-comprador.html?requestId=${requestDoc.id}`);
         } else {
             // Check if a request already exists for this user and campaign
             const existingRequest = await window.db.collection('requests')
@@ -921,7 +921,7 @@ async function viewCampaign(id) {
             }
 
             // Redirect to seller chat
-            window.location.href = `chat-vendedor.html?requestId=${requestId}`;
+            redirectTo(`chat-vendedor.html?requestId=${requestId}`);
         }
 
         // Get participants
@@ -1179,7 +1179,7 @@ async function initializeDashboard() {
                     window.unsubscribeCampaigns();
                     window.unsubscribeCampaigns = null;
                 }
-                window.location.href = 'login.html';
+                redirectTo('login.html');
             }
         });
 

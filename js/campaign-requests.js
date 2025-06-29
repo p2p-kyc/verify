@@ -185,10 +185,10 @@ async function openChatWithSeller(requestId) {
         // Determinar si el usuario es vendedor o comprador
         if (currentUserId === requestData.userId) {
             // Es vendedor
-            window.location.href = `chat-vendedor.html?requestId=${requestId}`;
+            redirectTo(`chat-vendedor.html?requestId=${requestId}`);
         } else if (currentUserId === campaignData.createdBy) {
             // Es comprador (creador de la campaña)
-            window.location.href = `chat-comprador.html?requestId=${requestId}`;
+            redirectTo(`chat-comprador.html?requestId=${requestId}`);
         } else {
             throw new Error('No tienes permiso para acceder a este chat');
         }
@@ -206,8 +206,6 @@ async function getUserData(userId) {
         ...userDoc.data()
     };
 }
-
-// Ya no necesitamos esta función porque llamamos directamente a openChatWithSeller
 
 // Mostrar interfaz para unirse a la campaña
 function displayJoinInterface(campaign) {
@@ -273,7 +271,7 @@ async function submitJoinRequest() {
         
         // Redirigir al dashboard
         setTimeout(() => {
-            window.location.href = 'dashboard.html';
+            redirectTo('dashboard.html');
         }, 2000);
     } catch (error) {
         console.error('Error:', error);

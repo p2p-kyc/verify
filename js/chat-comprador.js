@@ -73,7 +73,7 @@ window.addEventListener('load', () => {
     // Escuchar cambios de autenticación
     window.auth.onAuthStateChanged(async user => {
         if (!user) {
-            window.location.href = 'index.html';
+            redirectTo('index.html');
             return;
         }
 

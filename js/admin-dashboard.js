@@ -20,12 +20,12 @@ window.auth.onAuthStateChanged(async (user) => {
         // Check if user is admin
         const userDoc = await window.db.collection('users').doc(user.uid).get();
         if (!userDoc.exists || userDoc.data().role !== 'admin') {
-            window.location.href = 'index.html';
+            redirectTo('index.html');
             return;
         }
         initializeDashboard();
     } else {
-        window.location.href = 'index.html';
+        redirectTo('index.html');
     }
 });
 
@@ -509,7 +509,7 @@ function generateReport() {
 function handleLogout() {
     window.auth.signOut()
         .then(() => {
-            window.location.href = 'index.html';
+            redirectTo('index.html');
         })
         .catch(error => {
             console.error('Error signing out:', error);

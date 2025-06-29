@@ -10,7 +10,7 @@ let verification = null;
 // Redirect to dashboard if no campaign ID
 if (!campaignId) {
     console.error('No campaign ID provided');
-    window.location.href = 'dashboard.html';
+    redirectTo('dashboard.html');
 }
 
 // Wait for auth to be ready
@@ -139,7 +139,7 @@ async function loadCampaignDetails() {
             <div class="error-state">
                 <i class='bx bx-error-circle'></i>
                 <p>${error.message}</p>
-                <button onclick="window.location.href='dashboard.html'" class="retry-btn">
+                <button onclick="redirectTo('dashboard.html')" class="retry-btn">
                     <i class='bx bx-arrow-back'></i>
                     <span>Back to Dashboard</span>
                 </button>

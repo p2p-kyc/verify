@@ -73,13 +73,13 @@ window.addEventListener('load', () => {
             // Verificar si es admin
             const userDoc = await window.db.collection('users').doc(user.uid).get();
             if (!userDoc.exists || userDoc.data().role !== 'admin') {
-                window.location.href = 'index.html';
+                redirectTo('index.html');
                 return;
             }
             // Cargar chats con apelaciones
             loadAppealsChats();
         } else {
-            window.location.href = 'index.html';
+            redirectTo('index.html');
         }
     });
 });

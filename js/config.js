@@ -72,12 +72,27 @@ window.auth.onAuthStateChanged((user) => {
     if (user) {
         // User is signed in
         if (currentPath === 'index.html') {
-            window.location.href = 'dashboard.html';
+            redirectTo('dashboard.html');
         }
     } else {
         // User is signed out
         if (currentPath !== 'index.html') {
-            window.location.href = 'index.html';
+            redirectTo('index.html');
         }
     }
 });
+
+// Función helper para manejar rutas base en GitHub Pages
+function getBasePath() {
+    // Si estamos en GitHub Pages con la ruta /verify/, usar esa ruta base
+    if (window.location.pathname.includes('/verify/')) {
+        return '/verify/';
+    }
+    // En desarrollo local, usar ruta relativa
+    return './';
+}
+
+// Función helper para redirecciones
+function redirectTo(path) {
+    window.location.href = getBasePath() + path;
+}

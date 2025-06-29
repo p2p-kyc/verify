@@ -18,7 +18,7 @@ if (finishButton) {
 // Escuchar cambios de autenticación
 auth.onAuthStateChanged(async user => {
     if (!user) {
-        window.location.href = 'index.html';
+        redirectTo('index.html');
         return;
     }
 

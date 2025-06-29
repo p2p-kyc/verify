@@ -11,7 +11,7 @@ async function checkAdmin() {
 
         if (!auth.currentUser) {
             console.error('No user logged in');
-            window.location.href = '/index.html';
+            redirectTo('index.html');
             return;
         }
 
@@ -20,20 +20,20 @@ async function checkAdmin() {
 
         if (!userDoc.exists) {
             console.error('User document does not exist');
-            window.location.href = '/dashboard.html';
+            redirectTo('dashboard.html');
             return;
         }
 
         if (userDoc.data().role !== 'admin') {
             console.error('User is not admin');
-            window.location.href = '/dashboard.html';
+            redirectTo('dashboard.html');
             return;
         }
 
         console.log('Admin check passed');
     } catch (error) {
         console.error('Error checking admin status:', error);
-        window.location.href = '/dashboard.html';
+        redirectTo('dashboard.html');
     }
 }
 

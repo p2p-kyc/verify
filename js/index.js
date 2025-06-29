@@ -1,7 +1,7 @@
 // Escuchar cambios de autenticación
 auth.onAuthStateChanged(async user => {
     if (!user) {
-        window.location.href = 'login.html';
+        redirectTo('login.html');
         return;
     }
 
@@ -17,9 +17,9 @@ auth.onAuthStateChanged(async user => {
         
         // Redirigir según el rol
         if (userData.role === 'seller') {
-            window.location.href = 'campaigns-seller.html';
+            redirectTo('campaigns-seller.html');
         } else if (userData.role === 'buyer') {
-            window.location.href = 'campaigns-buyer.html';
+            redirectTo('campaigns-buyer.html');
         } else {
             console.error('Invalid user role:', userData.role);
         }

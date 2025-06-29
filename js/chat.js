@@ -14,7 +14,7 @@ messageForm.addEventListener('submit', handleMessageSubmit);
 // Listen for authentication changes
 auth.onAuthStateChanged(async user => {
     if (!user) {
-        window.location.href = 'index.html';
+        redirectTo('index.html');
         return;
     }
 

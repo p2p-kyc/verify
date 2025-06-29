@@ -2,8 +2,7 @@
 window.addEventListener('load', () => {
     window.auth.onAuthStateChanged(async user => {
         if (!user) {
-            console.log('[MyPayments] User not authenticated, redirecting to index.html');
-            window.location.href = 'index.html';
+            redirectTo('index.html');
             return;
         }
         console.log('[MyPayments] Authenticated user:', user.uid, user.email);
@@ -34,4 +33,14 @@ window.addEventListener('load', () => {
             paymentsList.innerHTML = '<div class="error">Error loading payments.</div>';
         }
     });
+});
+
+// Escuchar cambios de autenticación
+auth.onAuthStateChanged(user => {
+    if (!user) {
+        redirectTo('index.html');
+        return;
+    }
+    currentUser = user;
+    loadMyPayments();
 }); 

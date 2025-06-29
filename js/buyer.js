@@ -6,7 +6,7 @@ let selectedCampaignId = null;
 auth.onAuthStateChanged(user => {
     currentUser = user;
     if (!user) {
-        window.location.href = 'login.html';
+        redirectTo('login.html');
         return;
     }
 

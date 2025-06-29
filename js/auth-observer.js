@@ -7,14 +7,14 @@ auth.onAuthStateChanged((user) => {
         window.currentUser = user;
         
         if (currentPath === 'index.html') {
-            window.location.href = 'dashboard.html';
+            redirectTo('dashboard.html');
         }
     } else {
         // User is signed out
         window.currentUser = null;
         
         if (currentPath !== 'index.html') {
-            window.location.href = 'index.html';
+            redirectTo('index.html');
         }
     }
 });
