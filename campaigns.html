@@ -14,6 +14,16 @@
             <p>Selecciona una campaña para aplicar como verificador</p>
         </header>
 
+        <nav class="navbar">
+            <div class="navbar-left">
+                <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+                    <i class='bx bx-menu'></i>
+                </button>
+                <a href="#" onclick="redirectTo('dashboard.html')" class="nav-link"><i class='bx bx-arrow-back'></i></a>
+                <span>All Campaigns</span>
+            </div>
+        </nav>
+
         <main>
             <section id="campaignsList" class="campaigns-grid">
                 <!-- Las campañas se cargarán dinámicamente aquí -->
@@ -28,6 +38,9 @@
             </section>
         </main>
     </div>
+
+    <!-- Overlay para sidebar móvil -->
+    <div class="sidebar-overlay" onclick="closeSidebar()"></div>
 
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>

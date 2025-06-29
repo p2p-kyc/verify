@@ -11,6 +11,9 @@
     <!-- Navbar fijo superior -->
     <nav class="navbar">
         <div class="navbar-left">
+            <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+                <i class='bx bx-menu'></i>
+            </button>
             <i class='bx bx-shield-quarter' style='color: var(--primary-color);'></i>
             <div class="search-box">
                 <i class='bx bx-search'></i>
@@ -40,6 +43,9 @@
             </div>
         </div>
     </nav>
+
+    <!-- Overlay para sidebar móvil -->
+    <div class="sidebar-overlay" onclick="closeSidebar()"></div>
 
     <!-- Layout principal -->
     <div class="main-layout">

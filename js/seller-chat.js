@@ -313,3 +313,79 @@ function scrollToBottom() {
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
 }
+
+// Mobile chat view functions
+function toggleChatView() {
+    const chatsList = document.querySelector('.chats-list');
+    const chatArea = document.querySelector('.chat-area');
+    
+    if (window.innerWidth <= 768) {
+        if (chatsList.style.display === 'none' || chatsList.style.display === '') {
+            showChatsList();
+        } else {
+            showChatArea();
+        }
+    }
+}
+
+function showChatsList() {
+    const chatsList = document.querySelector('.chats-list');
+    const chatArea = document.querySelector('.chat-area');
+    
+    if (chatsList && chatArea) {
+        chatsList.style.display = 'block';
+        chatArea.style.display = 'none';
+    }
+}
+
+function showChatArea() {
+    const chatsList = document.querySelector('.chats-list');
+    const chatArea = document.querySelector('.chat-area');
+    
+    if (chatsList && chatArea) {
+        chatsList.style.display = 'none';
+        chatArea.style.display = 'block';
+        
+        // Add back button to header actions on mobile
+        if (window.innerWidth <= 768) {
+            const headerActions = document.getElementById('headerActions');
+            if (headerActions) {
+                headerActions.innerHTML = `
+                    <button class="btn-action" onclick="showChatsList()" title="Back to chats">
+                        <i class='bx bx-arrow-back'></i>
+                    </button>
+                `;
+            }
+        }
+    }
+}
+
+// Initialize mobile chat view
+document.addEventListener('DOMContentLoaded', () => {
+    // Show chats list by default on mobile
+    if (window.innerWidth <= 768) {
+        showChatsList();
+    }
+    
+    // Handle window resize
+    window.addEventListener('resize', () => {
+        if (window.innerWidth > 768) {
+            const chatsList = document.querySelector('.chats-list');
+            const chatArea = document.querySelector('.chat-area');
+            if (chatsList && chatArea) {
+                chatsList.style.display = 'block';
+                chatArea.style.display = 'block';
+            }
+        }
+    });
+    
+    // Add click handler to chat items for mobile
+    document.addEventListener('click', (e) => {
+        if (e.target.closest('.chat-item') && window.innerWidth <= 768) {
+            // Small delay to ensure the chat is loaded before switching view
+            setTimeout(() => {
+                showChatArea();
+            }, 100);
+        }
+    });
+});

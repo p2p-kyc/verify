@@ -11,10 +11,16 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
+    <!-- Overlay para sidebar móvil -->
+    <div class="sidebar-overlay" onclick="closeAdminSidebar()"></div>
+    
     <div class="admin-container">
         <!-- Sidebar -->
         <nav class="admin-sidebar">
             <div class="sidebar-header">
+                <button class="mobile-menu-toggle" onclick="toggleAdminSidebar()">
+                    <i class='bx bx-menu'></i>
+                </button>
                 <img src="img/logo.png" alt="KYC P2P" class="logo">
                 <h2>Admin Panel</h2>
             </div>

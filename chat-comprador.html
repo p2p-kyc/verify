@@ -561,16 +561,17 @@
         <div class="chat-area">
             <div class="chat-header">
                 <div class="chat-header-info">
-                    <div class="avatar">
-                        <i class='bx bx-user'></i>
-                    </div>
+                    <button class="mobile-menu-toggle" onclick="toggleChatView()">
+                        <i class='bx bx-menu'></i>
+                    </button>
+                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=John" alt="User" class="user-avatar">
                     <div class="chat-header-text">
                         <h3 id="chatTitle">Select a chat</h3>
-                        <p id="campaignInfo"></p>
+                        <p id="campaignInfo">Choose a campaign to start chatting</p>
                     </div>
                 </div>
                 <div class="chat-header-actions" id="headerActions">
-                    <!-- Button will be added dynamically when a chat is selected -->
+                    <!-- Actions will be added dynamically when a chat is selected -->
                 </div>
             </div>
             <div id="messagesContainer">

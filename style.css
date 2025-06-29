@@ -1840,55 +1840,6 @@ body, html {
     background: var(--terminal-green);
     color: var(--bg-primary);
     border: none;
-    width: 50px;
-    height: 50px;
-    border-radius: 8px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-}
-
-.chat-input button span {
-    display: none;
-}
-
-.chat-input button i {
-    font-size: 1.2rem;
-    margin: 0;
-}
-
-.chat-input button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(52, 199, 89, 0.3);
-}
-
-.chat-input button i {
-    font-size: 1.2rem;
-}
-
-.chat-input input {
-    flex: 1;
-    background: var(--bg-secondary);
-    border: 1px solid var(--terminal-green);
-    color: var(--text-primary);
-    padding: 0.75rem 1rem;
-    border-radius: 8px;
-    outline: none;
-    transition: all 0.3s ease;
-}
-
-.chat-input input:focus {
-    box-shadow: 0 0 0 2px rgba(52, 199, 89, 0.3);
-}
-
-.chat-input button {
-    background: var(--terminal-green);
-    color: var(--bg-primary);
-    border: none;
     padding: 0.75rem 1.5rem;
     border-radius: 8px;
     font-weight: bold;
@@ -2551,5 +2502,794 @@ body, html {
     to {
         transform: translateX(0);
         opacity: 1;
+    }
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+    .main-layout {
+        grid-template-columns: 250px 1fr 250px;
+        gap: 16px;
+        padding: 16px;
+    }
+    
+    .search-box input {
+        width: 180px;
+    }
+    
+    .nav-link {
+        padding: 8px 20px;
+        font-size: 1.2rem;
+    }
+}
+
+@media (max-width: 992px) {
+    .main-layout {
+        grid-template-columns: 220px 1fr;
+        gap: 12px;
+    }
+    
+    .right-sidebar {
+        display: none;
+    }
+    
+    .navbar-center {
+        display: none;
+    }
+    
+    .search-box {
+        display: none;
+    }
+    
+    .campaign-card {
+        padding: 16px;
+    }
+    
+    .campaign-stats {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    
+    .campaign-actions {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .campaign-actions button {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 768px) {
+    :root {
+        --navbar-height: 60px;
+        --sidebar-width: 100%;
+    }
+    
+    .main-layout {
+        grid-template-columns: 1fr;
+        margin-top: var(--navbar-height);
+        padding: 12px;
+        gap: 12px;
+    }
+    
+    .sidebar {
+        position: fixed;
+        left: -100%;
+        top: var(--navbar-height);
+        width: 280px;
+        height: calc(100vh - var(--navbar-height));
+        background-color: var(--card-bg);
+        border-right: 1px solid var(--border-color);
+        transition: left 0.3s ease;
+        z-index: 99;
+        overflow-y: auto;
+    }
+    
+    .sidebar.show {
+        left: 0;
+    }
+    
+    .navbar {
+        padding: 0 12px;
+    }
+    
+    .navbar-left {
+        gap: 8px;
+    }
+    
+    .navbar-left i {
+        font-size: 24px;
+    }
+    
+    .navbar-right {
+        gap: 8px;
+    }
+    
+    .avatar {
+        width: 32px;
+        height: 32px;
+    }
+    
+    .campaign-card {
+        margin-bottom: 12px;
+        padding: 12px;
+    }
+    
+    .campaign-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .campaign-title h3 {
+        font-size: 1.1rem;
+    }
+    
+    .campaign-stats {
+        flex-direction: column;
+        gap: 6px;
+    }
+    
+    .campaign-stats .stat {
+        justify-content: space-between;
+    }
+    
+    .campaign-meta {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .campaign-actions {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .campaign-actions button {
+        width: 100%;
+        padding: 10px;
+        font-size: 0.9rem;
+    }
+    
+    .feed-filters {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    
+    .filter-btn {
+        padding: 8px 12px;
+        font-size: 0.85rem;
+    }
+    
+    .create-post-card {
+        padding: 12px;
+    }
+    
+    .post-actions {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    
+    .post-actions button {
+        flex: 1;
+        min-width: 120px;
+    }
+    
+    .modal-content {
+        width: 95%;
+        max-width: 500px;
+        margin: 20px auto;
+        max-height: 90vh;
+    }
+    
+    .form-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+    
+    .campaign-details-modal {
+        width: 95%;
+        max-width: 600px;
+    }
+    
+    .campaign-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+    
+    .details-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    
+    .participants-list {
+        max-height: 200px;
+    }
+    
+    .toast {
+        width: 90%;
+        left: 5%;
+        right: 5%;
+    }
+}
+
+@media (max-width: 480px) {
+    .navbar {
+        padding: 0 8px;
+    }
+    
+    .navbar-left {
+        gap: 8px;
+    }
+    
+    .navbar-left i {
+        font-size: 20px;
+    }
+    
+    .main-layout {
+        padding: 8px;
+    }
+    
+    .campaign-card {
+        padding: 10px;
+        margin-bottom: 8px;
+    }
+    
+    .campaign-title h3 {
+        font-size: 1rem;
+    }
+    
+    .campaign-description {
+        font-size: 0.85rem;
+    }
+    
+    .campaign-actions button {
+        padding: 8px;
+        font-size: 0.8rem;
+    }
+    
+    .campaign-actions button i {
+        font-size: 1rem;
+    }
+    
+    .feed-filters {
+        gap: 6px;
+    }
+    
+    .filter-btn {
+        padding: 6px 10px;
+        font-size: 0.8rem;
+    }
+    
+    .create-post-card {
+        padding: 10px;
+    }
+    
+    .create-post-btn {
+        font-size: 0.9rem;
+    }
+    
+    .post-actions button {
+        padding: 8px;
+        font-size: 0.8rem;
+        min-width: 100px;
+    }
+    
+    .modal-content {
+        width: 98%;
+        margin: 10px auto;
+        padding: 16px;
+    }
+    
+    .modal-header h2 {
+        font-size: 1.2rem;
+    }
+    
+    .form-section h3 {
+        font-size: 1rem;
+    }
+    
+    .input-group label {
+        font-size: 0.9rem;
+    }
+    
+    .input-group input,
+    .input-group textarea,
+    .input-group select {
+        font-size: 0.9rem;
+        padding: 8px 12px;
+    }
+    
+    .button {
+        padding: 10px 16px;
+        font-size: 0.9rem;
+    }
+    
+    .toast {
+        width: 95%;
+        left: 2.5%;
+        right: 2.5%;
+        padding: 12px;
+    }
+    
+    .toast-content {
+        font-size: 0.9rem;
+    }
+}
+
+/* Mobile Navigation Toggle */
+.mobile-menu-toggle {
+    display: none;
+    background: none;
+    border: none;
+    color: var(--text-color);
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 8px;
+}
+
+@media (max-width: 768px) {
+    .mobile-menu-toggle {
+        display: block;
+    }
+    
+    .sidebar-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 98;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+    }
+    
+    .sidebar-overlay.show {
+        opacity: 1;
+        visibility: visible;
+    }
+}
+
+/* Chat Responsive */
+@media (max-width: 768px) {
+    .chat-container {
+        flex-direction: column;
+        height: 100vh;
+    }
+    
+    .chats-list {
+        width: 100%;
+        min-width: auto;
+        max-width: none;
+        height: 50vh;
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    .chat-area {
+        height: 50vh;
+    }
+    
+    .chat-header {
+        padding: 8px 12px;
+    }
+    
+    .chat-header-info {
+        gap: 8px;
+    }
+    
+    .chat-header-text h3 {
+        font-size: 1rem;
+    }
+    
+    .chat-header-text p {
+        font-size: 0.8rem;
+    }
+    
+    .message-form {
+        padding: 8px 12px;
+        gap: 8px;
+    }
+    
+    .message-form input {
+        font-size: 0.9rem;
+        padding: 8px 12px;
+    }
+    
+    .message-form button {
+        padding: 8px;
+        font-size: 1rem;
+    }
+    
+    .message {
+        max-width: 85%;
+        padding: 8px 12px;
+        margin-bottom: 8px;
+    }
+    
+    .message-content {
+        font-size: 0.9rem;
+    }
+    
+    .timestamp {
+        font-size: 0.7rem;
+    }
+    
+    /* Mobile menu toggle button */
+    .mobile-menu-toggle {
+        display: block !important;
+        background: none;
+        border: none;
+        color: var(--text-color);
+        font-size: 1.5rem;
+        cursor: pointer;
+        padding: 8px;
+        margin-right: 8px;
+    }
+    
+    .mobile-menu-toggle:hover {
+        color: var(--primary-color);
+    }
+    
+    /* Hide desktop elements on mobile */
+    .chat-header-actions .btn-action:not(.mobile-menu-toggle) {
+        display: none;
+    }
+    
+    /* Improve chat item touch targets */
+    .chat-item {
+        padding: 16px 12px;
+        min-height: 60px;
+    }
+    
+    .chat-item-avatar {
+        width: 45px;
+        height: 45px;
+    }
+    
+    /* Better spacing for mobile */
+    #messagesContainer {
+        padding: 12px;
+    }
+    
+    /* Improve message input on mobile */
+    #messageInput {
+        font-size: 16px; /* Prevents zoom on iOS */
+        padding: 12px;
+        border-radius: 20px;
+    }
+    
+    /* Better button sizing for mobile */
+    .message-form button {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+    }
+}
+
+@media (max-width: 480px) {
+    .chats-list {
+        height: 40vh;
+    }
+    
+    .chat-area {
+        height: 60vh;
+    }
+    
+    .chat-header {
+        padding: 6px 8px;
+    }
+    
+    .chat-header-text h3 {
+        font-size: 0.9rem;
+    }
+    
+    .chat-header-text p {
+        font-size: 0.75rem;
+    }
+    
+    .message-form {
+        padding: 6px 8px;
+        gap: 6px;
+    }
+    
+    .message-form input {
+        font-size: 0.85rem;
+        padding: 6px 10px;
+    }
+    
+    .message-form button {
+        padding: 6px;
+        font-size: 0.9rem;
+        width: 36px;
+        height: 36px;
+    }
+    
+    .message {
+        max-width: 90%;
+        padding: 6px 10px;
+        margin-bottom: 6px;
+    }
+    
+    .message-content {
+        font-size: 0.85rem;
+    }
+    
+    .timestamp {
+        font-size: 0.65rem;
+    }
+    
+    /* Smaller chat items for very small screens */
+    .chat-item {
+        padding: 12px 8px;
+        min-height: 50px;
+    }
+    
+    .chat-item-avatar {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .chat-item-header h4 {
+        font-size: 0.9rem;
+    }
+    
+    .campaign-name {
+        font-size: 0.8rem;
+    }
+    
+    .last-message {
+        font-size: 0.8rem;
+    }
+}
+
+/* Smooth transitions for mobile chat view changes */
+.chats-list,
+.chat-area {
+    transition: all 0.3s ease;
+}
+
+/* Better touch feedback */
+.chat-item:active {
+    background-color: rgba(255, 255, 255, 0.1);
+    transform: scale(0.98);
+}
+
+/* Improve scrollbars for mobile */
+#messagesContainer::-webkit-scrollbar {
+    width: 4px;
+}
+
+#messagesContainer::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+#messagesContainer::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 2px;
+}
+
+/* Better focus states for mobile */
+.message-form input:focus {
+    box-shadow: 0 0 0 2px var(--primary-color);
+}
+
+/* Improve button accessibility on mobile */
+.mobile-menu-toggle:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+/* Auth Pages Responsive */
+@media (max-width: 768px) {
+    .auth-form {
+        width: 90%;
+        max-width: 400px;
+        padding: 24px 20px;
+    }
+    
+    .auth-form h1 {
+        font-size: 1.8rem;
+    }
+    
+    .auth-form h2 {
+        font-size: 1.4rem;
+    }
+    
+    .input-group {
+        margin-bottom: 16px;
+    }
+    
+    .input-group input {
+        padding: 12px 16px;
+        font-size: 1rem;
+    }
+    
+    button {
+        padding: 12px 24px;
+        font-size: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .auth-form {
+        width: 95%;
+        padding: 20px 16px;
+    }
+    
+    .auth-form h1 {
+        font-size: 1.6rem;
+    }
+    
+    .auth-form h2 {
+        font-size: 1.2rem;
+    }
+    
+    .input-group input {
+        padding: 10px 14px;
+        font-size: 0.9rem;
+    }
+    
+    button {
+        padding: 10px 20px;
+        font-size: 0.9rem;
+    }
+}
+
+/* Admin Panel Responsive */
+@media (max-width: 768px) {
+    .admin-container {
+        flex-direction: column;
+    }
+    
+    .admin-sidebar {
+        position: fixed;
+        left: -100%;
+        top: 0;
+        width: 280px;
+        height: 100vh;
+        transition: left 0.3s ease;
+        z-index: 1000;
+    }
+    
+    .admin-sidebar.show {
+        left: 0;
+    }
+    
+    .admin-main {
+        margin-left: 0;
+        padding: 16px;
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+    
+    .charts-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+    
+    .content-header {
+        flex-direction: column;
+        gap: 12px;
+        align-items: flex-start;
+    }
+    
+    .header-actions {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .filters-section {
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .filter-group {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    
+    .data-table {
+        font-size: 0.85rem;
+    }
+    
+    .data-table th,
+    .data-table td {
+        padding: 8px 6px;
+    }
+}
+
+@media (max-width: 480px) {
+    .admin-main {
+        padding: 12px;
+    }
+    
+    .content-header h1 {
+        font-size: 1.4rem;
+    }
+    
+    .stats-grid {
+        gap: 12px;
+    }
+    
+    .stat-card {
+        padding: 16px;
+    }
+    
+    .stat-info h3 {
+        font-size: 0.9rem;
+    }
+    
+    .stat-info p {
+        font-size: 1.2rem;
+    }
+    
+    .data-table {
+        font-size: 0.8rem;
+    }
+    
+    .data-table th,
+    .data-table td {
+        padding: 6px 4px;
+    }
+    
+    .action-button {
+        padding: 8px 12px;
+        font-size: 0.85rem;
+    }
+}
+
+/* Utility Classes for Mobile */
+@media (max-width: 768px) {
+    .hide-mobile {
+        display: none !important;
+    }
+    
+    .show-mobile {
+        display: block !important;
+    }
+    
+    .text-center-mobile {
+        text-align: center;
+    }
+    
+    .full-width-mobile {
+        width: 100% !important;
+    }
+    
+    .stack-mobile {
+        flex-direction: column !important;
+    }
+    
+    .gap-mobile {
+        gap: 8px !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .hide-mobile-small {
+        display: none !important;
+    }
+    
+    .show-mobile-small {
+        display: block !important;
+    }
+    
+    .text-small-mobile {
+        font-size: 0.85rem !important;
+    }
+    
+    .padding-mobile {
+        padding: 8px !important;
+    }
+    
+    .margin-mobile {
+        margin: 8px !important;
     }
 }

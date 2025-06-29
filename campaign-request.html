@@ -8,6 +8,19 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <nav class="navbar">
+        <div class="navbar-left">
+            <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+                <i class='bx bx-menu'></i>
+            </button>
+            <a href="#" onclick="redirectTo('campaign-requests.html')" class="nav-link"><i class='bx bx-arrow-back'></i></a>
+            <span>Campaign Request</span>
+        </div>
+    </nav>
+    
+    <!-- Overlay para sidebar móvil -->
+    <div class="sidebar-overlay" onclick="closeSidebar()"></div>
+
     <div class="container">
         <div class="campaign-details">
             <h1>Detalles de la Campaña</h1>

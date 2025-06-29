@@ -1272,3 +1272,45 @@ async function getCuentasCobradas(campaignId) {
         return total;
     } catch (e) { console.error(`[getCuentasCobradas][${campaignId}] ERROR:`, e); return 0; }
 }
+
+// Mobile sidebar functions
+function toggleSidebar() {
+    const sidebar = document.querySelector('.sidebar');
+    const overlay = document.querySelector('.sidebar-overlay');
+    
+    if (sidebar.classList.contains('show')) {
+        closeSidebar();
+    } else {
+        openSidebar();
+    }
+}
+
+function openSidebar() {
+    const sidebar = document.querySelector('.sidebar');
+    const overlay = document.querySelector('.sidebar-overlay');
+    
+    sidebar.classList.add('show');
+    overlay.classList.add('show');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeSidebar() {
+    const sidebar = document.querySelector('.sidebar');
+    const overlay = document.querySelector('.sidebar-overlay');
+    
+    sidebar.classList.remove('show');
+    overlay.classList.remove('show');
+    document.body.style.overflow = '';
+}
+
+// Close sidebar when clicking on a link (mobile)
+document.addEventListener('DOMContentLoaded', () => {
+    const sidebarLinks = document.querySelectorAll('.sidebar-link');
+    sidebarLinks.forEach(link => {
+        link.addEventListener('click', () => {
+            if (window.innerWidth <= 768) {
+                closeSidebar();
+            }
+        });
+    });
+});

@@ -18,7 +18,19 @@
         <!-- Área de chat -->
         <div class="chat-area">
             <div class="chat-header">
-                <h3 id="chatTitle">Selecciona un chat</h3>
+                <div class="chat-header-info">
+                    <button class="mobile-menu-toggle" onclick="toggleChatView()">
+                        <i class='bx bx-menu'></i>
+                    </button>
+                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Buyer" alt="Buyer" class="user-avatar">
+                    <div class="chat-header-text">
+                        <h3 id="chatTitle">Select a chat</h3>
+                        <p id="campaignInfo">Choose a campaign to start chatting</p>
+                    </div>
+                </div>
+                <div class="chat-header-actions" id="headerActions">
+                    <!-- Actions will be added dynamically when a chat is selected -->
+                </div>
             </div>
 
             <!-- Contenedor de mensajes -->

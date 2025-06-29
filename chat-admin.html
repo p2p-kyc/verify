@@ -28,15 +28,18 @@
         <div class="chat-area">
             <!-- Encabezado del chat -->
             <div class="chat-header">
-                <div class="chat-info">
-                    <h3 id="chatTitle">Selecciona una conversación</h3>
-                    <p id="campaignInfo"></p>
-                </div>
-                <div class="header-actions" id="headerActions">
-                    <button class="button secondary" onclick="window.location.href='admin-payments.html'">
-                        <i class='bx bx-arrow-back'></i>
-                        Volver a pagos
+                <div class="chat-header-info">
+                    <button class="mobile-menu-toggle" onclick="toggleChatView()">
+                        <i class='bx bx-menu'></i>
                     </button>
+                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Admin" alt="Admin" class="user-avatar">
+                    <div class="chat-header-text">
+                        <h3 id="chatTitle">Select a chat</h3>
+                        <p id="campaignInfo">Choose a campaign to start chatting</p>
+                    </div>
+                </div>
+                <div class="chat-header-actions" id="headerActions">
+                    <!-- Actions will be added dynamically when a chat is selected -->
                 </div>
             </div>
 

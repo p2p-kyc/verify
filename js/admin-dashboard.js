@@ -520,3 +520,49 @@ function handleLogout() {
 document.getElementById('refreshBtn').addEventListener('click', () => {
     initializeDashboard();
 });
+
+// Mobile sidebar functions for admin
+function toggleAdminSidebar() {
+    const sidebar = document.querySelector('.admin-sidebar');
+    const overlay = document.querySelector('.sidebar-overlay');
+    
+    if (sidebar.classList.contains('show')) {
+        closeAdminSidebar();
+    } else {
+        openAdminSidebar();
+    }
+}
+
+function openAdminSidebar() {
+    const sidebar = document.querySelector('.admin-sidebar');
+    const overlay = document.querySelector('.sidebar-overlay');
+    
+    sidebar.classList.add('show');
+    if (overlay) {
+        overlay.classList.add('show');
+    }
+    document.body.style.overflow = 'hidden';
+}
+
+function closeAdminSidebar() {
+    const sidebar = document.querySelector('.admin-sidebar');
+    const overlay = document.querySelector('.sidebar-overlay');
+    
+    sidebar.classList.remove('show');
+    if (overlay) {
+        overlay.classList.remove('show');
+    }
+    document.body.style.overflow = '';
+}
+
+// Close sidebar when clicking on a link (mobile)
+document.addEventListener('DOMContentLoaded', () => {
+    const sidebarLinks = document.querySelectorAll('.admin-sidebar .sidebar-menu a');
+    sidebarLinks.forEach(link => {
+        link.addEventListener('click', () => {
+            if (window.innerWidth <= 768) {
+                closeAdminSidebar();
+            }
+        });
+    });
+});

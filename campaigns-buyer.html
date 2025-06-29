@@ -10,10 +10,16 @@
 <body class="dark-theme">
     <nav class="navbar">
         <div class="navbar-left">
+            <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+                <i class='bx bx-menu'></i>
+            </button>
             <a href="#" onclick="redirectTo('dashboard.html')" class="nav-link"><i class='bx bx-arrow-back'></i></a>
             <span>My Campaigns</span>
         </div>
     </nav>
+    
+    <!-- Overlay para sidebar móvil -->
+    <div class="sidebar-overlay" onclick="closeSidebar()"></div>
     <div class="main-layout">
         <aside class="sidebar">
             <div class="sidebar-section">

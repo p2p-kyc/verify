@@ -9,6 +9,19 @@
 </head>
 <body>
     <div class="container">
+        <nav class="navbar">
+            <div class="navbar-left">
+                <button class="mobile-menu-toggle" onclick="toggleSidebar()">
+                    <i class='bx bx-menu'></i>
+                </button>
+                <a href="#" onclick="redirectTo('dashboard.html')" class="nav-link"><i class='bx bx-arrow-back'></i></a>
+                <span>Seller Campaigns</span>
+            </div>
+        </nav>
+        
+        <!-- Overlay para sidebar móvil -->
+        <div class="sidebar-overlay" onclick="closeSidebar()"></div>
+
         <header>
             <h1>Campañas KYC Disponibles</h1>
             <p>Selecciona una campaña para aplicar como verificador</p>
